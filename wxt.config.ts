@@ -2,6 +2,8 @@ import { defineConfig } from 'wxt';
 
 export default defineConfig({
   imports: false,
+  // Not '.output': dot-folders are hidden in Finder.
+  outDir: 'dist',
   manifest: {
     name: 'Event Notes for Google Calendar',
     short_name: 'Event Notes',

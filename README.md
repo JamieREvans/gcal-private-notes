@@ -6,15 +6,15 @@ Private notes on your Google Calendar events, stored in your browser and never s
 
 ```bash
 npm install
-npm run dev        # builds to .output/chrome-mv3-dev and watches for changes
+npm run dev        # builds to dist/chrome-mv3-dev and watches for changes
 npm test           # unit tests (Vitest + happy-dom + WXT fake browser)
 npm run typecheck
-npm run build      # production build in .output/chrome-mv3
-npm run zip        # store upload zip
+npm run build      # production build in dist/chrome-mv3
+npm run zip        # store upload zip → dist/gcal-notes-<version>-chrome.zip
 ```
 
 **Load unpacked:**
-- **Chrome:** go to `chrome://extensions`, turn on Developer mode, click Load unpacked and choose `.output/chrome-mv3` (or `-dev`).
+- **Chrome:** go to `chrome://extensions`, turn on Developer mode, click Load unpacked and choose `dist/chrome-mv3` (or `-dev`).
 - **Brave:** go to `brave://extensions` and do the same.
 
 Dev builds show a **Simulate Pro** toggle at the bottom of Settings.

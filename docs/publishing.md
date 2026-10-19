@@ -12,15 +12,15 @@ Brave installs extensions straight from the Chrome Web Store, so one listing cov
   - Turn on login, so buyers can restore Pro in other browsers.
   - Put the ExtensionPay extension id in `lib/license.ts` (`EXTPAY_ID`).
   - Test with Stripe test cards in test mode before going live.
-- [ ] **Public repo + privacy policy:** create a public GitHub repo, push this code and check that `PRIVACY.md` is reachable. Update the `YOUR-GITHUB` placeholders in `PRIVACY.md` and `entrypoints/options/main.tsx`.
-  - **Licence note:** the `extpay` library is AGPL-3.0, so shipping it effectively means the extension's source must be available under the AGPL too. A public repo with an AGPL-3.0 `LICENSE` covers that, and suits a privacy-focused, hobby-supported tool. If you'd rather keep the source closed, replace the library with direct calls to ExtensionPay's API.
+- [ ] **Repos:** the code lives in a **private** repo. Create a small **public** repo (for example `event-notes-site`) with GitHub Pages turned on, holding `PRIVACY.md` and a support page. That gives the store a privacy-policy URL and gives users somewhere to report issues. Claude replaces the `YOUR-GITHUB` placeholders once the repos exist.
+  - **Licence blocker before publishing:** the `extpay` library is AGPL-3.0, which conflicts with closed-source distribution. You've emailed ExtensionPay to ask for permission or a commercial licence (draft in `docs/extensionpay-licence-email.md`). If they say no, switch to Lemon Squeezy licence keys before publishing.
 
 ## 2. Build the package
 
 ```bash
 npm run icons     # only if assets/icon.svg changed
 npm test
-npm run zip       # → .output/gcal-notes-<version>-chrome.zip
+npm run zip       # → dist/gcal-notes-<version>-chrome.zip
 ```
 
 Bump `version` in `package.json` for every upload.
