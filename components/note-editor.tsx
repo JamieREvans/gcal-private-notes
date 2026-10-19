@@ -2,7 +2,7 @@ import type { ComponentChildren } from 'preact';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import type { EventRef } from '../lib/event-id';
 import { sendMessage } from '../lib/messages';
-import { saveNote, type EventSnapshot, type Note } from '../lib/notes-store';
+import { deleteNote, saveNote, type EventSnapshot, type Note } from '../lib/notes-store';
 import { FREE_NOTE_LIMIT, noteLockedByNewNote } from '../lib/plan';
 import { isSyncable } from '../lib/sync-mirror';
 import { getTemplates, type Template } from '../lib/templates';
@@ -100,7 +100,7 @@ export function NoteEditor({ eventRef, getSnapshot, autoFocus }: Props) {
     return (
       <div class="en-box">
         {header()}
-        <LockedNotice />
+        <LockedNotice onDelete={() => deleteNote(eventRef.key)} />
       </div>
     );
   }
@@ -192,7 +192,7 @@ function CapBanner({ note, onDismiss }: { note: Note; onDismiss: () => void }) {
   );
 }
 
-function LockedNotice() {
+function LockedNotice({ onDelete }: { onDelete?: () => void }) {
   return (
     <div class="en-callout">
       <p>
@@ -206,6 +206,15 @@ function LockedNotice() {
         <button type="button" class="en-link" onClick={openSettings}>
           Export
         </button>
+        {onDelete && (
+          <button
+            type="button"
+            class="en-link"
+            onClick={() => confirm('Delete this locked note permanently?') && onDelete()}
+          >
+            Delete
+          </button>
+        )}
       </div>
     </div>
   );

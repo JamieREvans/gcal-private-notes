@@ -9,10 +9,10 @@ import { exportNotes, importNotes } from '../../lib/export';
 import { setLicense } from '../../lib/license';
 import { notesToMarkdown } from '../../lib/markdown';
 import { sendMessage } from '../../lib/messages';
-import { deleteAllNotes } from '../../lib/notes-store';
-import { FREE_NOTE_LIMIT } from '../../lib/plan';
+import { deleteAllNotes, getAllNotes } from '../../lib/notes-store';
+import { FREE_NOTE_LIMIT, lockedKeys } from '../../lib/plan';
 import { updateSettings, type Settings } from '../../lib/settings';
-import { BUDGET_BYTES, SYNC_PREFIX } from '../../lib/sync-mirror';
+import { BUDGET_BYTES, clearSyncMirror, SYNC_PREFIX } from '../../lib/sync-mirror';
 import { DEFAULT_TEMPLATES, getTemplates, saveTemplates, type Template } from '../../lib/templates';
 
 const PRIVACY_POLICY_URL = 'https://github.com/JamieREvans/gcal-private-notes/blob/main/PRIVACY.md';
@@ -79,7 +79,7 @@ function Templates({ enabled }: { enabled: boolean }) {
   };
 
   return (
-    <div class={enabled ? '' : 'en-disabled'}>
+    <div class={enabled ? '' : 'en-disabled'} inert={!enabled} aria-disabled={!enabled}>
       {templates.map((t, i) => (
         <div class="en-template" key={t.id}>
           <input
@@ -137,14 +137,23 @@ function App() {
     if (!file) return;
     try {
       const result = await importNotes(JSON.parse(await file.text()));
-      setMessage(`Imported ${result.imported} notes${result.skipped ? `, skipped ${result.skipped} that were already up to date` : ''}.`);
+      const locked = plan.pro ? 0 : lockedKeys(await getAllNotes(), false).size;
+      setMessage(
+        `Imported ${result.imported} notes` +
+          (result.skipped ? `, skipped ${result.skipped} that were already up to date or unreadable` : '') +
+          (locked ? `. ${locked} older notes are locked on the free plan and unlock with Pro.` : '.'),
+      );
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Import failed.');
     }
   };
 
   const onDeleteAll = async () => {
-    if (!confirm(`Delete all ${plan.notes.length} notes from this browser? Export first if you want a backup.`)) return;
+    const synced = plan.pro && settings.syncEnabled;
+    const warning = synced
+      ? `Delete all ${plan.notes.length} notes? Sync is on, so they will also be deleted from your other synced browsers. Export first if you want a backup.`
+      : `Delete all ${plan.notes.length} notes from this browser? Export first if you want a backup.`;
+    if (!confirm(warning)) return;
     await deleteAllNotes();
     setMessage('All notes deleted.');
   };
@@ -184,13 +193,29 @@ function App() {
         <h2 class="en-section-title">Sync</h2>
         <Toggle
           label="Sync notes across browsers"
-          hint="Uses your browser's own sync (Chrome profile sync). Notes always stay in this browser too. Brave's sync may not carry extension data."
+          hint="Uses your browser's own sync (Chrome profile sync). Notes always stay in this browser too. Turning this off stops syncing; it doesn't delete anything. Brave's sync may not carry extension data."
           pro={!plan.pro}
           disabled={!plan.pro}
           checked={plan.pro && settings.syncEnabled}
           onChange={(v) => set({ syncEnabled: v })}
         />
         {plan.pro && settings.syncEnabled && <SyncStatus />}
+        {plan.pro && (
+          <div class="en-button-row">
+            <button
+              type="button"
+              class="en-button"
+              onClick={async () => {
+                if (!confirm('Remove your notes from browser sync? Notes in this browser are kept. Other browsers with sync on will upload their copies again.')) return;
+                await set({ syncEnabled: false });
+                await clearSyncMirror();
+                setMessage('Your notes were removed from browser sync.');
+              }}
+            >
+              Remove my notes from browser sync
+            </button>
+          </div>
+        )}
 
         <h2 class="en-section-title">
           Templates {!plan.pro && <span class="en-pro">Pro</span>}

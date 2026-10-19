@@ -1,4 +1,4 @@
-import { getAllNotes, getNote, putNotes, type Note } from './notes-store';
+import { getAllNotes, getNote, putNotes, sanitizeNote, type Note } from './notes-store';
 
 export interface ExportFile {
   format: 'gcal-event-notes';
@@ -24,13 +24,10 @@ export async function importNotes(data: unknown): Promise<{ imported: number; sk
   }
   const toWrite: Note[] = [];
   let skipped = 0;
-  for (const note of file.notes) {
-    if (!isNote(note)) {
-      skipped++;
-      continue;
-    }
-    const existing = await getNote(note.key);
-    if (existing && existing.updatedAt >= note.updatedAt) {
+  for (const raw of file.notes) {
+    const note = sanitizeNote(raw);
+    const existing = note && (await getNote(note.key));
+    if (!note || (existing && existing.updatedAt >= note.updatedAt)) {
       skipped++;
       continue;
     }
@@ -38,17 +35,4 @@ export async function importNotes(data: unknown): Promise<{ imported: number; sk
   }
   await putNotes(toWrite);
   return { imported: toWrite.length, skipped };
-}
-
-function isNote(value: unknown): value is Note {
-  const n = value as Note;
-  return (
-    typeof n?.key === 'string' &&
-    typeof n.calendarId === 'string' &&
-    typeof n.eventId === 'string' &&
-    typeof n.seriesId === 'string' &&
-    typeof n.text === 'string' &&
-    typeof n.updatedAt === 'number' &&
-    typeof n.createdAt === 'number'
-  );
 }

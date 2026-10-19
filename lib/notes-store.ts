@@ -1,5 +1,5 @@
 import { browser } from 'wxt/browser';
-import type { EventRef } from './event-id';
+import { toEventRef, type EventRef } from './event-id';
 
 export interface EventSnapshot {
   title?: string;
@@ -92,12 +92,74 @@ export async function putNotes(notes: Note[]): Promise<void> {
 }
 
 export async function deleteNote(key: string): Promise<void> {
+  await recordDeletes([key]);
   await browser.storage.local.remove(storageKey(key));
 }
 
 export async function deleteAllNotes(): Promise<void> {
   const all = await browser.storage.local.get(null);
-  await browser.storage.local.remove(Object.keys(all).filter(isNoteKey));
+  const keys = Object.keys(all).filter(isNoteKey);
+  await recordDeletes(keys.map((k) => k.slice(NOTE_PREFIX.length)));
+  await browser.storage.local.remove(keys);
+}
+
+/**
+ * Deletes are recorded durably (note key → time deleted) so the sync mirror
+ * can propagate them even if the browser closes first, and never resurrects
+ * a deleted note from an older synced copy.
+ */
+const PENDING_DELETES_KEY = 'pendingDeletes';
+const PENDING_DELETE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
+export async function getPendingDeletes(): Promise<Record<string, number>> {
+  const res = await browser.storage.local.get(PENDING_DELETES_KEY);
+  return (res[PENDING_DELETES_KEY] as Record<string, number> | undefined) ?? {};
+}
+
+async function recordDeletes(keys: string[], at = Date.now()): Promise<void> {
+  if (!keys.length) return;
+  const map = await getPendingDeletes();
+  for (const [k, t] of Object.entries(map)) if (at - t > PENDING_DELETE_TTL_MS) delete map[k];
+  for (const k of keys) map[k] = at;
+  await browser.storage.local.set({ [PENDING_DELETES_KEY]: map });
+}
+
+export async function clearPendingDeletes(keys: string[]): Promise<void> {
+  if (!keys.length) return;
+  const map = await getPendingDeletes();
+  for (const k of keys) delete map[k];
+  await browser.storage.local.set({ [PENDING_DELETES_KEY]: map });
+}
+
+/**
+ * Validates a note from outside this browser (import file, other devices via
+ * sync) and rebuilds its identity fields from the event id, so a malformed or
+ * hostile record can't break views or point links somewhere unexpected.
+ */
+export function sanitizeNote(value: unknown): Note | null {
+  const n = value as Partial<Note> | null;
+  if (
+    !n ||
+    typeof n.calendarId !== 'string' ||
+    typeof n.eventId !== 'string' ||
+    typeof n.text !== 'string' ||
+    !Number.isFinite(n.updatedAt) ||
+    !n.calendarId ||
+    !n.eventId
+  ) {
+    return null;
+  }
+  const str = (v: unknown) => (typeof v === 'string' && v ? v : undefined);
+  const url = str(n.url);
+  return {
+    ...toEventRef(n.eventId, n.calendarId),
+    text: n.text,
+    title: str(n.title),
+    when: str(n.when),
+    url: url?.startsWith('https://calendar.google.com/') ? url : undefined,
+    createdAt: Number.isFinite(n.createdAt) ? (n.createdAt as number) : (n.updatedAt as number),
+    updatedAt: n.updatedAt as number,
+  };
 }
 
 /** Calls back whenever any note changes in local storage. */

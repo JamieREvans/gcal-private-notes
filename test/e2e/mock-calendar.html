@@ -1,0 +1,42 @@
+<!doctype html>
+<!-- Mock of Google Calendar used only by the e2e check. Mirrors the DOM hooks in lib/gcal-dom.ts; all data is fake. -->
+<html><head><meta charset="utf-8"><title>Mock Calendar</title>
+<style>
+  body { font-family: Roboto, Arial, sans-serif; margin: 0; background: #fff; color: #1f1f1f; }
+  .grid { display: grid; grid-template-columns: repeat(4, 220px); gap: 12px; padding: 24px; }
+  .chip { background: #039be5; color: #fff; border-radius: 6px; padding: 8px 10px; cursor: pointer; font-size: 13px; }
+  [role=dialog] { position: fixed; top: 120px; left: 300px; width: 448px; background: #f0f4f9; border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,.25); padding: 8px 0 12px; }
+  .row { display: flex; padding: 4px 24px; font-size: 14px; } .heading { font-size: 22px; }
+</style></head>
+<body>
+  <div role="main">
+  <div class="grid">
+    <div class="chip" role="button" data-eventchip="" data-eventid="d2Vla2x5MW9uMV8yMDI2MTAxOVQxMzAwMDBaIGFsZXhAZXhhbXBsZS5jb20" data-title="Weekly 1:1 with Sam" data-when="Monday, October 19⋅9:00 – 9:30am" data-rec="Weekly on Monday" style="position:relative">Weekly 1:1 with Sam</div>
+    <div class="chip" role="button" data-eventchip="" data-eventid="d2Vla2x5MW9uMV8yMDI2MTAxMlQxMzAwMDBaIGFsZXhAZXhhbXBsZS5jb20" data-title="Weekly 1:1 with Sam" data-when="Monday, October 12⋅9:00 – 9:30am" data-rec="Weekly on Monday" style="position:relative">Weekly 1:1 with Sam</div>
+    <div class="chip" role="button" data-eventchip="" data-eventid="cGxhbm5pbmc0MiBhbGV4QGV4YW1wbGUuY29t" data-title="Quarterly planning" data-when="Thursday, October 22⋅2:00 – 3:30pm" data-rec="" style="position:relative">Quarterly planning</div>
+    <div class="chip" role="button" data-eventchip="" data-eventid="ZGVudGlzdDcgYWxleEBt" data-title="Dentist" data-when="Friday, October 23⋅8:00 – 8:45am" data-rec="" style="position:relative">Dentist</div>
+  </div>
+  </div>
+<script>
+  window.__keys = [];
+  document.addEventListener('keydown', (e) => window.__keys.push(e.key));
+  document.addEventListener('click', (e) => {
+    const chip = e.target.closest('[data-eventchip]');
+    if (!chip) return;
+    document.querySelector('[role=dialog]')?.remove();
+    const d = document.createElement('div');
+    d.setAttribute('role', 'dialog'); d.setAttribute('aria-labelledby', 'rAECCd'); d.setAttribute('data-layout-mode', 'bubble');
+    const holder = document.createElement('div'); holder.setAttribute('data-eventid', chip.dataset.eventid);
+    const rows = document.createElement('div'); rows.setAttribute('jsname', 'sV9x3c');
+    const row = document.createElement('div'); row.className = 'row';
+    const when = document.createElement('div'); when.id = 'xDetDlgWhen';
+    const h = document.createElement('span'); h.setAttribute('role', 'heading'); h.id = 'rAECCd'; h.className = 'heading'; h.textContent = chip.dataset.title;
+    const l1 = document.createElement('div'); l1.textContent = chip.dataset.when;
+    const l2 = document.createElement('div'); l2.textContent = chip.dataset.rec;
+    when.append(h, l1, l2); row.append(when); rows.append(row);
+    const cal = document.createElement('div'); cal.className = 'row'; cal.id = 'xDetDlgCal'; cal.textContent = 'Alex Example';
+    rows.append(cal); holder.append(rows); d.append(holder); document.body.append(d);
+  });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') document.querySelector('[role=dialog]')?.remove(); });
+</script>
+</body></html>

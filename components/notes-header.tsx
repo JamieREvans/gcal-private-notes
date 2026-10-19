@@ -92,7 +92,9 @@ export function NotesHeader({ status, onOpenSettings, onUpgrade, syncEnabled, pr
         <InfoIcon />
       </button>
       <span class="en-spacer" />
-      {status && <span class="en-status">{status}</span>}
+      <span class="en-status" role="status" aria-live="polite">
+        {status}
+      </span>
       {open && (
         <div id={popoverId} class="en-popover" role="dialog" aria-label="About Private Event Notes">
           <p>

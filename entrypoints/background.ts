@@ -4,7 +4,7 @@ import { defineBackground } from 'wxt/utils/define-background';
 import { EXTPAY_ID, getLicense, isPro, setLicense, type License } from '../lib/license';
 import { CURRENT_EVENT_KEY, type Message } from '../lib/messages';
 import { DEFAULT_SETTINGS, getSettings } from '../lib/settings';
-import { clearSyncMirror, fullSync, startSyncMirror } from '../lib/sync-mirror';
+import { fullSync, startSyncMirror } from '../lib/sync-mirror';
 
 type ExtPayUser = Awaited<ReturnType<ReturnType<typeof ExtPay>['getUser']>>;
 
@@ -79,7 +79,8 @@ export default defineBackground(() => {
 
   startSyncMirror(syncAllowed);
 
-  // Start or clear the mirror when sync is switched on/off or Pro status changes.
+  // Run a full sync when sync is switched on (or Pro unlocks with it already on).
+  // Switching it off just stops syncing; Settings has an explicit "remove from sync".
   // Uses the change's old/new values: the worker may have just woken with no memory.
   browser.storage.onChanged.addListener(async (changes, area) => {
     if (area !== 'local' || !('settings' in changes || 'license' in changes)) return;
@@ -93,6 +94,5 @@ export default defineBackground(() => {
     const now = allowedAt('newValue');
     const log = (err: unknown) => console.warn('[Private Event Notes] sync failed', err);
     if (now && !was) fullSync().catch(log);
-    if (was && !now) clearSyncMirror().catch(log);
   });
 });

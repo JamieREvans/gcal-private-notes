@@ -1,6 +1,6 @@
 {
   "name": "gcal-notes",
-  "description": "Private notes on your Google Calendar events, stored only in your browser.",
+  "description": "Private notes on your Google Calendar events. Never added to the event or shared with guests.",
   "version": "0.1.0",
   "private": true,
   "license": "AGPL-3.0-or-later",
@@ -13,7 +13,9 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "postinstall": "wxt prepare",
-    "icons": "node scripts/icons.mjs"
+    "icons": "node scripts/icons.mjs",
+    "e2e": "node test/e2e/run.mjs",
+    "store-assets": "node scripts/store-assets.mjs"
   },
   "dependencies": {
     "extpay": "^3.1.2",
@@ -21,6 +23,7 @@
   },
   "devDependencies": {
     "happy-dom": "^21.0.3",
+    "playwright": "^1.64.1",
     "sharp": "^0.35.5",
     "typescript": "^7.0.2",
     "vitest": "^5.0.5",

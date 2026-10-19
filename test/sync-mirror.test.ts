@@ -1,14 +1,15 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { browser } from 'wxt/browser';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { toEventRef } from '../lib/event-id';
-import { getNote, putNote, type Note } from '../lib/notes-store';
+import { deleteAllNotes, deleteNote, getNote, getPendingDeletes, putNote, type Note } from '../lib/notes-store';
 import {
   BUDGET_ITEMS,
   fullSync,
   mergeFromSync,
   planEvictions,
-  pushNote,
-  pushTombstone,
+  pushChanges,
+  startSyncMirror,
   syncKey,
   TOMBSTONE_TTL_MS,
   type SyncValue,
@@ -20,6 +21,8 @@ function note(id: string, updatedAt: number, text = 'x'): Note {
   const ref = toEventRef(id, 'cal');
   return { ...ref, text, createdAt: updatedAt, updatedAt };
 }
+const syncValue = async (key: string) => (await fakeBrowser.storage.sync.get(key))[key];
+const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 describe('planEvictions', () => {
   it('evicts nothing when there is room', () => {
@@ -56,7 +59,7 @@ describe('push and merge', () => {
     for (let i = 0; i < BUDGET_ITEMS; i++) await putNote(note(`e${i}`, 100 + i));
     await fullSync();
     await putNote(note('newest', 10_000));
-    await pushNote('cal|newest');
+    await pushChanges(['cal|newest']);
 
     const sync = await fakeBrowser.storage.sync.get(null);
     expect(Object.keys(sync)).toHaveLength(BUDGET_ITEMS);
@@ -81,16 +84,51 @@ describe('push and merge', () => {
     expect(await getNote('cal|a')).toBeUndefined();
   });
 
-  it('writes a tombstone for a user delete', async () => {
+  it('ignores malformed or mismatched remote notes', async () => {
+    await mergeFromSync('cal|a', { ...note('b', 300), title: 42 } as unknown as Note);
+    expect(await getNote('cal|a')).toBeUndefined();
+    await mergeFromSync('cal|a', { ...note('a', 300), url: 'https://evil.example/' });
+    expect((await getNote('cal|a'))?.url).toBeUndefined();
+  });
+
+  it('writes a tombstone stamped with the delete time, then forgets the pending delete', async () => {
     await putNote(note('a', 100));
-    await pushNote('cal|a');
-    await fakeBrowser.storage.local.remove('note:cal|a');
-    await pushNote('cal|a');
-    expect((await fakeBrowser.storage.sync.get('n:cal|a'))['n:cal|a']).toMatchObject({ deleted: true });
-    // Re-deleting does not bump the tombstone.
-    const before = (await fakeBrowser.storage.sync.get('n:cal|a'))['n:cal|a'];
-    await pushTombstone('cal|a');
-    expect((await fakeBrowser.storage.sync.get('n:cal|a'))['n:cal|a']).toEqual(before);
+    await pushChanges(['cal|a']);
+    const before = Date.now();
+    await deleteNote('cal|a');
+    await pushChanges(['cal|a']);
+    const tomb = (await syncValue('n:cal|a')) as SyncValue;
+    expect(tomb).toMatchObject({ deleted: true });
+    expect(tomb.updatedAt).toBeGreaterThanOrEqual(before);
+    expect(await getPendingDeletes()).toEqual({});
+  });
+
+  it('does not resurrect a note deleted before its tombstone was pushed', async () => {
+    await putNote(note('a', 100));
+    await pushChanges(['cal|a']);
+    await deleteNote('cal|a'); // browser closes before the debounced push
+    await fullSync(); // next startup
+    expect(await getNote('cal|a')).toBeUndefined();
+    expect(await syncValue('n:cal|a')).toMatchObject({ deleted: true });
+  });
+
+  it('lets an edit made elsewhere after the delete win', async () => {
+    await putNote(note('a', 100));
+    await deleteNote('cal|a');
+    await fakeBrowser.storage.sync.set({ 'n:cal|a': note('a', Date.now() + 60_000, 'edited on laptop') });
+    await fullSync();
+    expect((await getNote('cal|a'))?.text).toBe('edited on laptop');
+  });
+
+  it('pushes "delete all" as a single batched write', async () => {
+    for (let i = 0; i < 200; i++) await putNote(note(`e${i}`, 100 + i));
+    await fullSync();
+    const set = vi.spyOn(browser.storage.sync, 'set');
+    await deleteAllNotes();
+    await pushChanges();
+    expect(set).toHaveBeenCalledTimes(1);
+    const sync = await fakeBrowser.storage.sync.get(null);
+    expect(Object.values(sync).every((v) => (v as { deleted?: boolean }).deleted)).toBe(true);
   });
 
   it('fullSync pulls remote notes into local', async () => {
@@ -98,6 +136,26 @@ describe('push and merge', () => {
     await putNote(note('local', 60));
     await fullSync();
     expect((await getNote('cal|remote'))?.text).toBe('from other device');
-    expect(await fakeBrowser.storage.sync.get('n:cal|local')).toHaveProperty('n:cal|local');
+    expect(await syncValue('n:cal|local')).toBeDefined();
+  });
+});
+
+describe('startSyncMirror', () => {
+  it('pushes local edits after the debounce', async () => {
+    const stop = startSyncMirror(async () => true, 20);
+    await putNote(note('a', 100));
+    await wait(80);
+    expect(await syncValue('n:cal|a')).toBeDefined();
+    stop();
+  });
+
+  it('writes nothing if sync is switched off before the debounce fires', async () => {
+    let enabled = true;
+    const stop = startSyncMirror(async () => enabled, 30);
+    await putNote(note('a', 100));
+    enabled = false;
+    await wait(100);
+    expect(await syncValue('n:cal|a')).toBeUndefined();
+    stop();
   });
 });

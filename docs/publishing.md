@@ -46,7 +46,7 @@ Private notes on your Google Calendar events. Stored in your browser, never shar
 >
 > Pro is a one-off "buy me a coffee" from $1 that supports an independent hobby developer:
 > • Unlimited notes
-> • Sync across your browsers
+> • Sync across your Chrome browsers (Brave's sync may not include extension data)
 > • History from earlier occurrences of recurring meetings (great for 1:1s)
 > • Search every note in the side panel
 > • Note templates
@@ -56,10 +56,10 @@ Private notes on your Google Calendar events. Stored in your browser, never shar
 
 **Category:** Productivity · **Language:** English
 
-**Graphics:**
+**Graphics** (all in `store/`, regenerate with `npm run build && npm run e2e -- --screenshots && npm run store-assets`):
 - Icon: `public/icon/128.png`
-- Screenshots: 1–5 images at 1280×800. Capture the popup with a note, the side panel and the settings page. Use a demo calendar with no real names.
-- Small promo tile: 440×280
+- Screenshots (1280×800): `store/screenshot-1-popup.png`, `store/screenshot-2-sidepanel.png`, `store/screenshot-3-settings.png`. These show the real extension UI over a mock calendar with made-up data. A shot taken in real Google Calendar (on a demo calendar with no real names) would make a stronger first screenshot later.
+- Small promo tile (440×280): `store/promo-small-440x280.png`
 
 ## 4. Privacy practices tab
 
@@ -75,7 +75,15 @@ Lets users write private notes attached to their Google Calendar events and view
 
 **Remote code:** No.
 
-**Data usage:** Notes are stored locally and are not collected. The developer receives nothing. If the form asks about payment info, declare that payments are handled by ExtensionPay and Stripe and that only purchase status is checked. Tick the certifications: no selling of data, no use unrelated to the single purpose, no creditworthiness use.
+**Data usage:** tick these categories, and only these:
+- **Personally identifiable information:** the buyer's email address, collected by ExtensionPay at purchase and visible to you in their dashboard.
+- **Financial and payment information:** payments are processed by ExtensionPay and Stripe. The extension never sees card details.
+
+Leave the rest unticked:
+- Notes, the event titles and times saved with them, and the event IDs read for dots are processed and stored locally. They are never sent to you or any server you control, so they aren't "collected" in the store's sense.
+- Optional browser sync stores notes in the user's own Chrome Sync, not on your servers.
+
+Then tick all three certifications: you don't sell user data, you don't use it for purposes unrelated to the single purpose, and you don't use it for creditworthiness.
 
 **Privacy policy URL:** <https://github.com/JamieREvans/gcal-private-notes/blob/main/PRIVACY.md>
 

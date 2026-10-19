@@ -3,3 +3,4 @@ dist
 .wxt
 *.zip
 .DS_Store
+store/screenshots/

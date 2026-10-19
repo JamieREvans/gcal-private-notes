@@ -1,5 +1,16 @@
 import { browser } from 'wxt/browser';
-import { deleteNote, getAllNotes, getNote, isNoteKey, NOTE_PREFIX, putNote, type Note } from './notes-store';
+import {
+  clearPendingDeletes,
+  deleteNote,
+  getAllNotes,
+  getNote,
+  getPendingDeletes,
+  isNoteKey,
+  NOTE_PREFIX,
+  putNote,
+  sanitizeNote,
+  type Note,
+} from './notes-store';
 
 /**
  * Optional mirror of local notes into `storage.sync`.
@@ -84,113 +95,131 @@ async function getSyncItems(): Promise<Record<string, SyncValue>> {
   >;
 }
 
-/** Writes one value to sync, evicting older entries as needed. Returns false if it did not fit. */
-async function writeToSync(noteKey: string, value: SyncValue): Promise<boolean> {
-  const key = syncKey(noteKey);
-  const existing = await getSyncItems();
-  const current = existing[key];
-  // Already up to date (e.g. this change came from sync in the first place).
-  if (current && current.updatedAt >= value.updatedAt && isTombstone(current) === isTombstone(value)) return true;
+/**
+ * Pushes local state for the given note keys (default: every note and pending
+ * delete) to sync. Planned in memory and written as one remove + one set,
+ * because sync limits write operations per minute. Newest edits get room first.
+ */
+export async function pushChanges(noteKeys?: string[]): Promise<void> {
+  const working = await getSyncItems();
+  const pending = await getPendingDeletes();
+  const local = new Map((await getAllNotes()).map((n) => [n.key, n]));
+  const keys = noteKeys ?? [...new Set([...local.keys(), ...Object.keys(pending)])];
 
-  const evict = planEvictions(existing, key, value);
-  if (evict === null) {
-    if (current) await browser.storage.sync.remove(key); // stale copy would be misleading
-    return false;
+  const changes: [string, SyncValue][] = [];
+  for (const k of new Set(keys)) {
+    const note = local.get(k);
+    if (note) changes.push([k, note]);
+    else if (pending[k] !== undefined) changes.push([k, { deleted: true, updatedAt: pending[k] }]);
   }
-  if (evict.length) await browser.storage.sync.remove(evict);
-  await browser.storage.sync.set({ [key]: value });
-  return true;
+  changes.sort(([, a], [, b]) => b.updatedAt - a.updatedAt);
+
+  const toSet: Record<string, SyncValue> = {};
+  const toRemove = new Set<string>();
+  const settledDeletes: string[] = [];
+  for (const [noteKey, value] of changes) {
+    const key = syncKey(noteKey);
+    const current = working[key];
+    const deleting = isTombstone(value);
+    if (current && current.updatedAt >= value.updatedAt) {
+      // Sync already has this change, or a newer one that merging will apply here.
+      if (deleting) settledDeletes.push(noteKey);
+      continue;
+    }
+    const evict = planEvictions(working, key, value);
+    if (evict === null) {
+      // Too big or too old to fit: drop a stale copy rather than leave it misleading.
+      if (current && !isTombstone(current)) {
+        delete working[key];
+        toRemove.add(key);
+      }
+      continue;
+    }
+    for (const k of evict) {
+      delete working[k];
+      delete toSet[k];
+      toRemove.add(k);
+    }
+    working[key] = value;
+    toSet[key] = value;
+    toRemove.delete(key);
+    if (deleting) settledDeletes.push(noteKey);
+  }
+  if (toRemove.size) await browser.storage.sync.remove([...toRemove]);
+  if (Object.keys(toSet).length) await browser.storage.sync.set(toSet);
+  await clearPendingDeletes(settledDeletes);
 }
 
-export async function pushNote(noteKey: string): Promise<boolean> {
-  const note = await getNote(noteKey);
-  if (!note) return pushTombstone(noteKey);
-  return writeToSync(noteKey, note);
-}
-
-export async function pushTombstone(noteKey: string, updatedAt = Date.now()): Promise<boolean> {
-  const current = (await getSyncItems())[syncKey(noteKey)];
-  if (isTombstone(current)) return true;
-  return writeToSync(noteKey, { deleted: true, updatedAt });
-}
-
-/** Applies one incoming sync value to local storage (newest edit wins). */
+/** Applies one incoming sync value to local storage (newest change wins). */
 export async function mergeFromSync(noteKey: string, value: SyncValue): Promise<void> {
   const local = await getNote(noteKey);
   if (isTombstone(value)) {
     if (local && local.updatedAt <= value.updatedAt) await deleteNote(noteKey);
     return;
   }
-  if (!local || local.updatedAt < value.updatedAt) await putNote(value);
+  const incoming = sanitizeNote(value);
+  if (!incoming || incoming.key !== noteKey) return;
+  if (local && local.updatedAt >= incoming.updatedAt) return;
+  // Deleted here after that copy was written: keep it deleted (the tombstone follows).
+  const deletedAt = (await getPendingDeletes())[noteKey];
+  if (!local && deletedAt !== undefined && deletedAt >= incoming.updatedAt) return;
+  await putNote(incoming);
+}
+
+/** Pulls everything from sync, then pushes local notes and pending deletes. */
+export async function fullSync(): Promise<void> {
+  const remote = await getSyncItems();
+  for (const [k, v] of Object.entries(remote)) await mergeFromSync(noteKeyFromSync(k), v);
+  await pushChanges();
 }
 
 /**
- * Pulls everything from sync, then pushes local notes newest-first until the
- * budget is full. Planned in memory and written in one batch, since sync
- * limits write operations per minute.
+ * Removes this extension's notes from browser sync, on request. Other synced
+ * browsers keep their local copies (and re-upload them if their sync is on).
  */
-export async function fullSync(): Promise<void> {
-  const working = await getSyncItems();
-  for (const [k, v] of Object.entries(working)) await mergeFromSync(noteKeyFromSync(k), v);
-
-  const toSet: Record<string, SyncValue> = {};
-  const toRemove = new Set<string>();
-  const local = (await getAllNotes()).sort((a, b) => b.updatedAt - a.updatedAt);
-  for (const note of local) {
-    const key = syncKey(note.key);
-    const current = working[key];
-    if (current && current.updatedAt >= note.updatedAt) continue;
-    const evict = planEvictions(working, key, note);
-    if (evict === null) continue;
-    for (const k of evict) {
-      delete working[k];
-      delete toSet[k];
-      toRemove.add(k);
-    }
-    working[key] = note;
-    toSet[key] = note;
-    toRemove.delete(key);
-  }
-  if (toRemove.size) await browser.storage.sync.remove([...toRemove]);
-  if (Object.keys(toSet).length) await browser.storage.sync.set(toSet);
-}
-
-/** Removes this extension's notes from sync (other devices keep their local copies). */
 export async function clearSyncMirror(): Promise<void> {
   const keys = Object.keys(await getSyncItems());
   if (keys.length) await browser.storage.sync.remove(keys);
 }
 
 /**
- * Wires the mirror up in the background script. Local edits are pushed after
- * a debounce to stay well inside sync's write-rate limits.
+ * Wires the mirror up in the background script. Local changes are collected
+ * and pushed in one batch after a debounce, to stay inside sync's write-rate
+ * limits. Anything still pending if the worker stops is picked up by the next
+ * fullSync, because deletes are recorded durably.
  */
 export function startSyncMirror(isEnabled: () => Promise<boolean>, debounceMs = 5_000): () => void {
-  const timers = new Map<string, ReturnType<typeof setTimeout>>();
+  const dirty = new Set<string>();
+  let timer: ReturnType<typeof setTimeout> | undefined;
   let queue: Promise<unknown> = Promise.resolve();
   const enqueue = (task: () => Promise<unknown>) => {
     queue = queue.then(task).catch((err) => console.warn('[Private Event Notes] sync failed', err));
     return queue;
   };
 
-  const listener = async (changes: Record<string, { oldValue?: unknown; newValue?: unknown }>, area: string) => {
-    if (area !== 'local' && area !== 'sync') return;
-    if (!(await isEnabled())) return;
+  const flush = () =>
+    enqueue(async () => {
+      timer = undefined;
+      const keys = [...dirty];
+      dirty.clear();
+      // Re-checked here, not when the change arrived: sync may have been switched off since.
+      if (keys.length && (await isEnabled())) await pushChanges(keys);
+    });
 
-    for (const [key, change] of Object.entries(changes)) {
-      if (area === 'local' && isNoteKey(key)) {
-        const noteKey = key.slice(NOTE_PREFIX.length);
-        clearTimeout(timers.get(noteKey));
-        timers.set(
-          noteKey,
-          setTimeout(() => {
-            timers.delete(noteKey);
-            enqueue(() => pushNote(noteKey));
-          }, debounceMs),
-        );
-      } else if (area === 'sync' && key.startsWith(SYNC_PREFIX) && change.newValue !== undefined) {
+  const listener = async (changes: Record<string, { oldValue?: unknown; newValue?: unknown }>, area: string) => {
+    if (area === 'local') {
+      const keys = Object.keys(changes).filter(isNoteKey);
+      if (!keys.length) return;
+      for (const k of keys) dirty.add(k.slice(NOTE_PREFIX.length));
+      clearTimeout(timer);
+      timer = setTimeout(flush, debounceMs);
+    } else if (area === 'sync') {
+      if (!(await isEnabled())) return;
+      for (const [key, change] of Object.entries(changes)) {
         // Removals without a tombstone are evictions: never delete locally.
-        enqueue(() => mergeFromSync(noteKeyFromSync(key), change.newValue as SyncValue));
+        if (key.startsWith(SYNC_PREFIX) && change.newValue !== undefined) {
+          enqueue(() => mergeFromSync(noteKeyFromSync(key), change.newValue as SyncValue));
+        }
       }
     }
   };
@@ -198,6 +227,6 @@ export function startSyncMirror(isEnabled: () => Promise<boolean>, debounceMs = 
   browser.storage.onChanged.addListener(listener);
   return () => {
     browser.storage.onChanged.removeListener(listener);
-    timers.forEach(clearTimeout);
+    clearTimeout(timer);
   };
 }

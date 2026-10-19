@@ -4,7 +4,7 @@ import { FREE_NOTE_LIMIT } from '../lib/plan';
 
 export const PRO_FEATURES = [
   `Unlimited notes (free keeps your ${FREE_NOTE_LIMIT} most recent)`,
-  'Sync across your browsers',
+  'Sync between browsers signed in to the same Chrome profile',
   'History from earlier occurrences of recurring meetings',
   'Search every note in the side panel',
   'Note templates (1:1, meeting, interview…)',

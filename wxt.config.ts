@@ -6,8 +6,7 @@ export default defineConfig({
   outDir: 'dist',
   manifest: {
     name: 'Private Event Notes for Google Calendar',
-    short_name: 'Private Event Notes',
-    description: 'Private notes on your Google Calendar events, stored only in your browser.',
+    description: 'Private notes on your Google Calendar events. Never added to the event or shared with guests.',
     permissions: ['storage', 'unlimitedStorage', 'sidePanel'],
     action: { default_title: 'Private Event Notes' },
   },

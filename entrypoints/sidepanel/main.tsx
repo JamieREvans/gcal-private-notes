@@ -74,7 +74,7 @@ function App() {
       </header>
       <p class="en-subtitle">Only visible to you. A browser extension, not part of Google Calendar.</p>
 
-      <h2 class="en-section-title">This event</h2>
+      <h2 class="en-section-title">Last opened event</h2>
       {current ? (
         <>
           <p class="en-event-title">{current.snapshot.title || 'Untitled event'}</p>
@@ -102,6 +102,7 @@ function App() {
             class="en-search"
             type="search"
             placeholder="Search notes and event titles"
+            aria-label="Search notes and event titles"
             value={query}
             onInput={(e) => setQuery((e.currentTarget as HTMLInputElement).value)}
           />
