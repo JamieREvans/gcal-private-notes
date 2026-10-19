@@ -2,6 +2,7 @@ import { render } from 'preact';
 import { defineContentScript } from 'wxt/utils/define-content-script';
 import { NoteEditor } from '../../components/note-editor';
 import { STYLES } from '../../components/styles';
+import type { EventRef } from '../../lib/event-id';
 import { findChips, findEventPage, findPopups, type Mountpoint } from '../../lib/gcal-dom';
 import { getLicense, isPro, onLicenseChanged } from '../../lib/license';
 import { sendMessage } from '../../lib/messages';
@@ -88,8 +89,20 @@ export default defineContentScript({
       if (mp && !page) page = { ...mount(mp, 'page'), owner: mp.owner };
     }
 
+    // Recurring events on screen feed the side panel's "Today" (sent only when they change).
+    let lastVisible = '';
+    function reportVisible(refs: EventRef[]) {
+      const recurring = refs.filter((r) => r.eventId !== r.seriesId);
+      const signature = recurring.map((r) => r.key).sort().join(',');
+      if (signature === lastVisible) return;
+      lastVisible = signature;
+      sendMessage({ type: 'visible-events', refs: recurring });
+    }
+
     function syncMarkers() {
-      for (const { el, ref } of findChips()) {
+      const chips = findChips();
+      reportVisible(chips.map((c) => c.ref));
+      for (const { el, ref } of chips) {
         const locked = noteState.get(ref.key);
         const want = settings.showMarkers && locked !== undefined;
         let dot = el.querySelector<HTMLElement>(`:scope > .${MARKER_CLASS}`);

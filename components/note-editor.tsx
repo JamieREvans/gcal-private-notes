@@ -2,11 +2,20 @@ import type { ComponentChildren } from 'preact';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import type { EventRef } from '../lib/event-id';
 import { sendMessage } from '../lib/messages';
-import { deleteNote, saveNote, type EventSnapshot, type Note } from '../lib/notes-store';
+import {
+  deleteNote,
+  isRecurring,
+  isSeriesNote,
+  saveNote,
+  seriesNoteKey,
+  type EventSnapshot,
+  type Note,
+} from '../lib/notes-store';
 import { FREE_NOTE_LIMIT, noteLockedByNewNote } from '../lib/plan';
 import { isSyncable } from '../lib/sync-mirror';
 import { getTemplates, type Template } from '../lib/templates';
 import { NotesHeader } from './notes-header';
+import { PinnedNote } from './pinned-note';
 import { usePlanState } from './use-plan-state';
 
 const SAVE_DELAY_MS = 400;
@@ -106,8 +115,13 @@ export function NoteEditor({ eventRef, getSnapshot, autoFocus }: Props) {
   }
 
   const others = plan.notes.filter(
-    (n) => n.key !== eventRef.key && n.calendarId === eventRef.calendarId && n.seriesId === eventRef.seriesId,
+    (n) =>
+      !isSeriesNote(n) &&
+      n.key !== eventRef.key &&
+      n.calendarId === eventRef.calendarId &&
+      n.seriesId === eventRef.seriesId,
   );
+  const pinned = plan.notes.find((n) => n.key === seriesNoteKey(eventRef.calendarId, eventRef.seriesId));
   const wouldLock = !hasNote && !capDismissed ? noteLockedByNewNote(plan.notes, plan.pro) : undefined;
   const tooBigToSync =
     plan.pro &&
@@ -163,6 +177,9 @@ export function NoteEditor({ eventRef, getSnapshot, autoFocus }: Props) {
             </button>
           ))}
         </div>
+      )}
+      {plan.pro && isRecurring(eventRef) && (
+        <PinnedNote eventRef={eventRef} pinned={pinned} getSnapshot={getSnapshot} />
       )}
       {plan.settings?.showSeriesHistory !== false &&
         others.length > 0 &&

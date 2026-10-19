@@ -6,10 +6,13 @@ import { formatOccurrence, NoteEditor, openSettings } from '../../components/not
 import { injectPageStyles } from '../../components/page-styles';
 import { ProCard } from '../../components/pro-card';
 import { usePlanState } from '../../components/use-plan-state';
-import { encodeEid, toEventRef } from '../../lib/event-id';
+import { encodeEid, toEventRef, type EventRef } from '../../lib/event-id';
 import { noteToMarkdown } from '../../lib/markdown';
-import { CURRENT_EVENT_KEY, type CurrentEvent } from '../../lib/messages';
-import type { Note } from '../../lib/notes-store';
+import { CURRENT_EVENT_KEY, VISIBLE_EVENTS_KEY, type CurrentEvent } from '../../lib/messages';
+import { isSeriesNote, seriesRef, updateNoteText, type Note } from '../../lib/notes-store';
+import { todaysPrep, type PrepItem } from '../../lib/prep';
+import { collectFollowUps, setTaskDone } from '../../lib/tasks';
+import { PinnedNote } from '../../components/pinned-note';
 
 function useCurrentEvent(): CurrentEvent | null {
   const [current, setCurrent] = useState<CurrentEvent | null>(null);
@@ -30,15 +33,64 @@ export function eventUrl(note: Note): string {
   return note.url || `https://calendar.google.com/calendar/event?eid=${encodeEid(note.eventId, note.calendarId)}`;
 }
 
-function App() {
-  const plan = usePlanState();
-  const current = useCurrentEvent();
+type Tab = 'today' | 'followups' | 'all';
+
+function useVisibleEvents(): EventRef[] {
+  const [refs, setRefs] = useState<EventRef[]>([]);
+  useEffect(() => {
+    browser.storage.session.get(VISIBLE_EVENTS_KEY).then((r) => setRefs((r[VISIBLE_EVENTS_KEY] as EventRef[]) ?? []));
+    const listener = (changes: Record<string, { newValue?: unknown }>, area: string) => {
+      if (area === 'session' && VISIBLE_EVENTS_KEY in changes) {
+        setRefs((changes[VISIBLE_EVENTS_KEY]?.newValue as EventRef[]) ?? []);
+      }
+    };
+    browser.storage.onChanged.addListener(listener);
+    return () => browser.storage.onChanged.removeListener(listener);
+  }, []);
+  return refs;
+}
+
+const refOf = (n: Note): EventRef => (isSeriesNote(n) ? seriesRef(n) : toEventRef(n.eventId, n.calendarId));
+
+/** Inline editor for any stored note: occurrence notes and pinned series notes. */
+function ExpandedNote({ note, onDone }: { note: Note; onDone: () => void }) {
+  return (
+    <div class="en-expanded">
+      {isSeriesNote(note) ? (
+        <div class="en-box">
+          <PinnedNote eventRef={refOf(note)} pinned={note} />
+        </div>
+      ) : (
+        <NoteEditor eventRef={refOf(note)} autoFocus />
+      )}
+      <div class="en-actions">
+        {!isSeriesNote(note) && (
+          <a href={eventUrl(note)} target="_blank" rel="noreferrer">
+            Open in Calendar
+          </a>
+        )}
+        <button type="button" class="en-link" onClick={() => navigator.clipboard.writeText(noteToMarkdown(note))}>
+          Copy as Markdown
+        </button>
+        <button type="button" class="en-link" onClick={onDone}>
+          Done
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function noteLabel(n: Note): string {
+  return isSeriesNote(n) ? '📌 Pinned to every occurrence' : formatOccurrence(n);
+}
+
+function AllNotes({ notes }: { notes: Note[] }) {
   const [query, setQuery] = useState('');
   const [expanded, setExpanded] = useState<string | null>(null);
 
   const groups = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const matches = plan.notes.filter(
+    const matches = notes.filter(
       (n) => !q || n.text.toLowerCase().includes(q) || (n.title ?? '').toLowerCase().includes(q),
     );
     const bySeries = new Map<string, Note[]>();
@@ -47,15 +99,155 @@ function App() {
       bySeries.set(k, [...(bySeries.get(k) ?? []), n]);
     }
     return [...bySeries.entries()]
-      .map(([key, notes]) => ({
+      .map(([key, group]) => ({
         key,
-        notes: notes.sort(
-          (a, b) => (b.instanceStart ?? '').localeCompare(a.instanceStart ?? '') || b.updatedAt - a.updatedAt,
+        notes: group.sort(
+          (a, b) =>
+            Number(isSeriesNote(b)) - Number(isSeriesNote(a)) ||
+            (b.instanceStart ?? '').localeCompare(a.instanceStart ?? '') ||
+            b.updatedAt - a.updatedAt,
         ),
-        latest: Math.max(...notes.map((n) => n.updatedAt)),
+        latest: Math.max(...group.map((n) => n.updatedAt)),
       }))
       .sort((a, b) => b.latest - a.latest);
-  }, [plan.notes, query]);
+  }, [notes, query]);
+
+  return (
+    <>
+      <input
+        class="en-search"
+        type="search"
+        placeholder="Search notes and event titles"
+        aria-label="Search notes and event titles"
+        value={query}
+        onInput={(e) => setQuery((e.currentTarget as HTMLInputElement).value)}
+      />
+      {groups.length === 0 && (
+        <p class="en-empty">{query ? 'No notes match.' : 'No notes yet. Open an event in Google Calendar to add one.'}</p>
+      )}
+      {groups.map((g) => {
+        const grouped = g.notes.length > 1 || g.notes.some(isSeriesNote);
+        return (
+          <section class="en-group" key={g.key}>
+            {grouped && <h3 class="en-group-title">{g.notes.find((n) => n.title)?.title || 'Recurring event'}</h3>}
+            {g.notes.map((n) =>
+              expanded === n.key ? (
+                <ExpandedNote key={n.key} note={n} onDone={() => setExpanded(null)} />
+              ) : (
+                <button type="button" class="en-item" key={n.key} onClick={() => setExpanded(n.key)}>
+                  <div class="en-date">{grouped ? noteLabel(n) : `${n.title || 'Untitled event'} · ${noteLabel(n)}`}</div>
+                  <div class="en-preview">{n.text}</div>
+                </button>
+              ),
+            )}
+          </section>
+        );
+      })}
+    </>
+  );
+}
+
+function FollowUps({ notes }: { notes: Note[] }) {
+  const [showDone, setShowDone] = useState(false);
+  const groups = useMemo(() => collectFollowUps(notes, showDone), [notes, showDone]);
+  const open = useMemo(() => collectFollowUps(notes).reduce((sum, g) => sum + g.tasks.length, 0), [notes]);
+
+  return (
+    <>
+      <div class="en-tab-toolbar">
+        <span class="en-message">
+          {open} open {open === 1 ? 'follow-up' : 'follow-ups'}
+        </span>
+        <label class="en-inline-check">
+          <input type="checkbox" checked={showDone} onChange={(e) => setShowDone((e.currentTarget as HTMLInputElement).checked)} />
+          Show done
+        </label>
+      </div>
+      {groups.length === 0 && (
+        <p class="en-empty">
+          Add a follow-up to any note by starting a line with <code>- [ ]</code>. Every open one shows up here.
+        </p>
+      )}
+      {groups.map(({ note, tasks }) => (
+        <section class="en-group" key={note.key}>
+          <h3 class="en-group-title">
+            {note.title || 'Untitled event'} <span class="en-date">· {noteLabel(note)}</span>
+          </h3>
+          <ul class="en-tasks">
+            {tasks.map((t) => (
+              <li key={t.line}>
+                <label class={t.done ? 'en-task-done' : ''}>
+                  <input
+                    type="checkbox"
+                    checked={t.done}
+                    onChange={(e) => updateNoteText(note, setTaskDone(note.text, t.line, (e.currentTarget as HTMLInputElement).checked))}
+                  />
+                  {t.text}
+                </label>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </>
+  );
+}
+
+function Today({ items }: { items: PrepItem[] }) {
+  const [writing, setWriting] = useState<string | null>(null);
+  if (!items.length) {
+    return (
+      <p class="en-empty">
+        Recurring meetings on today's calendar that have earlier notes or a pinned note show up here, so you can
+        prepare in seconds. Keep Google Calendar open on a view that includes today.
+      </p>
+    );
+  }
+  return (
+    <>
+      {items.map((item) => {
+        const last = item.previous[0];
+        return (
+          <section class="en-group en-prep" key={item.ref.key}>
+            <h3 class="en-group-title">
+              {item.title}
+              {item.ref.instanceStart && item.ref.instanceStart.length > 10 && (
+                <span class="en-date"> · {new Date(item.ref.instanceStart).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}</span>
+              )}
+            </h3>
+            {item.pinned && (
+              <div class="en-prep-block">
+                <div class="en-date">📌 Pinned</div>
+                <div class="en-preview">{item.pinned.text}</div>
+              </div>
+            )}
+            {last && (
+              <div class="en-prep-block">
+                <div class="en-date">Last time · {formatOccurrence(last)}</div>
+                <div class="en-preview">{last.text}</div>
+              </div>
+            )}
+            {writing === item.ref.key ? (
+              <NoteEditor eventRef={item.ref} getSnapshot={() => ({ title: item.title })} autoFocus />
+            ) : (
+              <button type="button" class="en-link" onClick={() => setWriting(item.ref.key)}>
+                {item.current ? "Open today's note" : "Write today's note"}
+              </button>
+            )}
+          </section>
+        );
+      })}
+    </>
+  );
+}
+
+function App() {
+  const plan = usePlanState();
+  const current = useCurrentEvent();
+  const visible = useVisibleEvents();
+  const prep = useMemo(() => todaysPrep(visible, plan.notes), [visible, plan.notes]);
+  const [tab, setTab] = useState<Tab | null>(null);
+  const activeTab: Tab = tab ?? (prep.length ? 'today' : 'all');
 
   return (
     <div class="en-root">
@@ -85,60 +277,48 @@ function App() {
         <p class="en-empty">Open an event in Google Calendar and its note shows up here.</p>
       )}
 
-      <h2 class="en-section-title">All notes</h2>
       {!plan.ready ? null : !plan.pro ? (
-        <ProCard
-          pro={false}
-          compact
-          lead={
-            plan.notes.length > 1
-              ? `Browse and search all ${plan.notes.length} of your notes here with Pro.`
-              : 'Browse and search all your notes here with Pro.'
-          }
-        />
+        <>
+          {prep.length > 0 && (
+            <p class="en-message en-teaser-line">
+              {prep.length} of today's meetings {prep.length === 1 ? 'has' : 'have'} earlier notes.{' '}
+              <span class="en-pro">Pro</span> shows them here so you can prepare in seconds.
+            </p>
+          )}
+          <h2 class="en-section-title">More with Pro</h2>
+          <ProCard
+            pro={false}
+            compact
+            lead="See today's meetings with their history, every open follow-up, and search across all your notes, right here."
+          />
+        </>
       ) : (
         <>
-          <input
-            class="en-search"
-            type="search"
-            placeholder="Search notes and event titles"
-            aria-label="Search notes and event titles"
-            value={query}
-            onInput={(e) => setQuery((e.currentTarget as HTMLInputElement).value)}
-          />
-          {groups.length === 0 && (
-            <p class="en-empty">{query ? 'No notes match.' : 'No notes yet. Open an event in Google Calendar to add one.'}</p>
-          )}
-          {groups.map((g) => (
-            <section class="en-group" key={g.key}>
-              {g.notes.length > 1 && <h3 class="en-group-title">{g.notes[0]!.title || 'Recurring event'}</h3>}
-              {g.notes.map((n) =>
-                expanded === n.key ? (
-                  <div class="en-expanded" key={n.key}>
-                    <NoteEditor eventRef={toEventRef(n.eventId, n.calendarId)} autoFocus />
-                    <div class="en-actions">
-                      <a href={eventUrl(n)} target="_blank" rel="noreferrer">
-                        Open in Calendar
-                      </a>
-                      <button type="button" class="en-link" onClick={() => navigator.clipboard.writeText(noteToMarkdown(n))}>
-                        Copy as Markdown
-                      </button>
-                      <button type="button" class="en-link" onClick={() => setExpanded(null)}>
-                        Done
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <button type="button" class="en-item" key={n.key} onClick={() => setExpanded(n.key)}>
-                    <div class="en-date">
-                      {g.notes.length > 1 ? formatOccurrence(n) : `${n.title || 'Untitled event'} · ${formatOccurrence(n)}`}
-                    </div>
-                    <div class="en-preview">{n.text}</div>
-                  </button>
-                ),
-              )}
-            </section>
-          ))}
+          <div class="en-tabs" role="tablist" aria-label="Notes views">
+            {(
+              [
+                ['today', `Today${prep.length ? ` (${prep.length})` : ''}`],
+                ['followups', 'Follow-ups'],
+                ['all', 'All notes'],
+              ] as [Tab, string][]
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                aria-selected={activeTab === id}
+                class={`en-tab ${activeTab === id ? 'en-tab-active' : ''}`}
+                onClick={() => setTab(id)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div role="tabpanel">
+            {activeTab === 'today' && <Today items={prep} />}
+            {activeTab === 'followups' && <FollowUps notes={plan.notes} />}
+            {activeTab === 'all' && <AllNotes notes={plan.notes} />}
+          </div>
         </>
       )}
     </div>

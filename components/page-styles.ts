@@ -93,6 +93,35 @@ html, body { margin: 0; background: var(--en-page-bg); }
 .en-button-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .en-message { font-size: 12px; color: var(--en-muted); margin-top: 8px; }
 .en-options { max-width: 560px; margin: 0 auto; }
+.en-tabs { display: flex; gap: 4px; margin: 20px 0 12px; border-bottom: 1px solid var(--en-border); }
+.en-tab {
+  all: unset;
+  cursor: pointer;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--en-muted);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.en-tab:focus-visible { outline: 2px solid var(--en-accent); }
+.en-tab-active { color: var(--en-text); border-bottom-color: var(--en-accent); }
+.en-tab-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.en-tab-toolbar .en-message { margin: 0; }
+.en-inline-check { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--en-muted); cursor: pointer; }
+.en-inline-check input, .en-tasks input { accent-color: var(--en-accent); }
+.en-tasks { list-style: none; margin: 0 0 4px; padding: 0; }
+.en-tasks li { padding: 3px 0; }
+.en-tasks label { display: flex; gap: 8px; align-items: flex-start; cursor: pointer; word-break: break-word; }
+.en-tasks input { margin-top: 3px; }
+.en-task-done { color: var(--en-muted); text-decoration: line-through; }
+.en-group-title .en-date { font-weight: 400; font-size: 11px; color: var(--en-muted); }
+.en-prep { padding: 10px 12px; border: 1px solid var(--en-border); border-radius: 10px; }
+.en-prep-block { margin: 6px 0 8px; }
+.en-prep-block .en-date { font-size: 11px; font-weight: 600; color: var(--en-muted); }
+.en-prep-block .en-preview { display: block; white-space: pre-wrap; word-break: break-word; max-height: 7.2em; overflow: hidden; }
+.en-teaser-line { margin-top: 16px; }
+code { font-family: ui-monospace, Menlo, monospace; font-size: 12px; background: var(--en-bg); padding: 1px 4px; border-radius: 4px; }
 .en-pro-card { margin-top: 4px; }
 .en-pro-card p { margin: 0 0 8px; }
 .en-pro-title { font-weight: 600; font-size: 14px; }

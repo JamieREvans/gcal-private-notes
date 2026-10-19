@@ -1,6 +1,7 @@
-import type { Note } from './notes-store';
+import { isSeriesNote, type Note } from './notes-store';
 
 function occurrenceLabel(note: Note): string {
+  if (isSeriesNote(note)) return 'Pinned';
   if (note.instanceStart) return note.instanceStart.length === 10 ? note.instanceStart : note.instanceStart.slice(0, 16).replace('T', ' ') + ' UTC';
   return note.when ?? new Date(note.createdAt).toISOString().slice(0, 10);
 }
@@ -22,12 +23,23 @@ export function notesToMarkdown(notes: Note[], exportedAt = new Date()): string 
     groups.set(k, [...(groups.get(k) ?? []), n]);
   }
   const sorted = [...groups.values()]
-    .map((g) => g.sort((a, b) => (b.instanceStart ?? '').localeCompare(a.instanceStart ?? '') || b.updatedAt - a.updatedAt))
+    .map((g) =>
+      g.sort(
+        (a, b) =>
+          Number(isSeriesNote(b)) - Number(isSeriesNote(a)) ||
+          (b.instanceStart ?? '').localeCompare(a.instanceStart ?? '') ||
+          b.updatedAt - a.updatedAt,
+      ),
+    )
     .sort((a, b) => Math.max(...b.map((n) => n.updatedAt)) - Math.max(...a.map((n) => n.updatedAt)));
 
   const out = [`# Private Event Notes`, ``, `Exported ${exportedAt.toISOString().slice(0, 10)}.`, ``];
   for (const group of sorted) {
-    if (group.length > 1) out.push(`# ${group[0]!.title || 'Recurring event'} (${group.length} occurrences)`, '');
+    const occurrences = group.filter((n) => !isSeriesNote(n)).length;
+    if (group.length > 1) {
+      const title = group.find((n) => n.title)?.title || 'Recurring event';
+      out.push(`# ${title} (${occurrences} ${occurrences === 1 ? 'occurrence' : 'occurrences'})`, '');
+    }
     for (const n of group) out.push(noteToMarkdown(n));
   }
   return out.join('\n');

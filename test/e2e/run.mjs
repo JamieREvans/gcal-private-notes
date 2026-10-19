@@ -67,7 +67,7 @@ const boxText = async () => {
   await page.waitForTimeout(150); // let plan state load
   return shadowText();
 };
-const ready = (box) => box.locator('textarea:not([disabled])').waitFor({ timeout: 5000 });
+const ready = (box) => box.locator('textarea:not([disabled])').first().waitFor({ timeout: 5000 });
 
 console.log(`Extension ${extId}`);
 
@@ -119,7 +119,7 @@ await step('chip with a note gets a dot marker', async () => {
 await step('reopening the popup shows the saved note', async () => {
   await page.getByText('Quarterly planning').click();
   await ready(notesBox);
-  assert.equal(await notesBox.locator('textarea').inputValue(), 'Agenda: budget, hiring. e c ? j ');
+  assert.equal(await notesBox.locator('textarea').first().inputValue(), 'Agenda: budget, hiring. e c ? j ');
   await page.keyboard.press('Escape');
 });
 
@@ -203,12 +203,73 @@ await step('recurring series: free sees a Pro teaser, Pro sees history', async (
   assert.match(await boxText(), /Start from:/);
 });
 
+await step('Pro: pin a note to every occurrence of a recurring meeting', async () => {
+  await setStorage({ license: { paid: true, checkedAt: Date.now() } });
+  await page.keyboard.press('Escape').catch(() => {});
+  await page.getByText('Weekly 1:1 with Sam').first().click();
+  await ready(notesBox);
+  await notesBox.getByRole('button', { name: /Pin a note to every occurrence/ }).click();
+  await page.keyboard.type('Goals: promo case by Q1');
+  await page.waitForTimeout(800);
+  const pinned = (await storage())['note:alex@example.com|weekly1on1|series'];
+  assert.equal(pinned?.kind, 'series');
+  assert.equal(pinned?.text, 'Goals: promo case by Q1');
+  // It shows on the other occurrence too.
+  await page.keyboard.press('Escape');
+  await page.getByText('Weekly 1:1 with Sam').nth(1).click();
+  await ready(notesBox);
+  assert.equal(await notesBox.locator('.en-pinned-text').inputValue(), 'Goals: promo case by Q1');
+  await page.keyboard.press('Escape');
+});
+
+await step('Pro: Today lists the meeting with last time\'s note; Follow-ups ticks items off', async () => {
+  // Make the first 1:1 chip an occurrence of today, so "Today" has something to show.
+  const d = new Date();
+  d.setHours(12, 0, 0, 0);
+  const stamp = d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+  const todayId = `weekly1on1_${stamp}`;
+  await page.evaluate((id) => {
+    document.querySelector('[data-eventchip]').dataset.eventid = btoa(`${id} alex@example.com`).replace(/=+$/, '');
+    document.body.append(document.createElement('span')); // nudge the observer
+  }, todayId);
+  await setStorage({
+    'note:alex@example.com|weekly1on1_20261012T130000Z': {
+      key: 'alex@example.com|weekly1on1_20261012T130000Z', calendarId: 'alex@example.com',
+      eventId: 'weekly1on1_20261012T130000Z', seriesId: 'weekly1on1', instanceStart: '2026-10-12T13:00:00Z',
+      title: 'Weekly 1:1 with Sam', text: 'Sam wants to lead the Q4 launch\n- [ ] Intro to design lead', createdAt: 1, updatedAt: 3,
+    },
+  });
+  await page.waitForTimeout(400);
+
+  const panel = await context.newPage();
+  await panel.setViewportSize({ width: 400, height: 800 });
+  await panel.goto(`chrome-extension://${extId}/sidepanel.html`);
+  await panel.getByRole('tab', { name: /Today \(1\)/ }).waitFor({ timeout: 5000 });
+  const today = await panel.locator('[role=tabpanel]').innerText();
+  assert.match(today, /Weekly 1:1 with Sam/);
+  assert.match(today, /Pinned[\s\S]*Goals: promo case by Q1/);
+  assert.match(today, /Last time[\s\S]*Sam wants to lead the Q4 launch/);
+  if (SHOTS) await panel.screenshot({ path: 'store/screenshots/raw-today.png' });
+
+  await panel.getByRole('tab', { name: 'Follow-ups' }).click();
+  assert.match(await panel.locator('[role=tabpanel]').innerText(), /1 open follow-up[\s\S]*Intro to design lead/);
+  if (SHOTS) await panel.screenshot({ path: 'store/screenshots/raw-followups.png' });
+  // Ticked items leave the open list straight away, so click rather than check().
+  await panel.getByRole('checkbox', { name: 'Intro to design lead' }).click();
+  await panel.waitForTimeout(300);
+  const updated = (await storage())['note:alex@example.com|weekly1on1_20261012T130000Z'];
+  assert.match(updated.text, /- \[x\] Intro to design lead/);
+  assert.match(await panel.locator('[role=tabpanel]').innerText(), /0 open follow-ups/);
+  await panel.close();
+});
+
 await step('side panel shows the current event and (Pro) searchable notes', async () => {
   const panel = await context.newPage();
   await panel.setViewportSize({ width: 400, height: 800 });
   await panel.goto(`chrome-extension://${extId}/sidepanel.html`);
   await panel.getByText('Last opened event').waitFor();
   assert.match(await panel.locator('body').innerText(), /Weekly 1:1 with Sam/);
+  await panel.getByRole('tab', { name: 'All notes' }).click();
   await panel.getByPlaceholder('Search notes and event titles').fill('Q4');
   assert.match(await panel.locator('body').innerText(), /Sam wants to lead the Q4 launch/);
   if (SHOTS) await panel.screenshot({ path: 'store/screenshots/raw-sidepanel.png' });
@@ -240,7 +301,7 @@ if (SHOTS) {
   await page.keyboard.press('Escape').catch(() => {});
   await page.getByText('Weekly 1:1 with Sam').first().click();
   await ready(notesBox);
-  await notesBox.locator('textarea').fill('Sam: shipped the onboarding revamp 🎉\n\nFollow-ups:\n- Intro to design lead\n- Revisit Q4 scope');
+  await notesBox.locator('textarea').first().fill('Sam: shipped the onboarding revamp 🎉\n\nFollow-ups:\n- Intro to design lead\n- Revisit Q4 scope');
   await page.waitForTimeout(600);
   await notesBox.locator('summary').click();
   await page.screenshot({ path: 'store/screenshots/raw-popup.png' });

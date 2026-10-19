@@ -17,6 +17,22 @@ export interface Note extends EventSnapshot {
   text: string;
   createdAt: number;
   updatedAt: number;
+  /** 'series': a pinned note shown on every occurrence of a recurring event (Pro). */
+  kind?: 'series';
+}
+
+export const isSeriesNote = (n: Pick<Note, 'kind'>) => n.kind === 'series';
+export const isRecurring = (ref: Pick<EventRef, 'eventId' | 'seriesId'>) => ref.eventId !== ref.seriesId;
+export const seriesNoteKey = (calendarId: string, seriesId: string) => `${calendarId}|${seriesId}|series`;
+
+/** The identity a recurring event's pinned note is stored under. */
+export function seriesRef(ref: Pick<EventRef, 'calendarId' | 'seriesId'>): EventRef {
+  return {
+    key: seriesNoteKey(ref.calendarId, ref.seriesId),
+    calendarId: ref.calendarId,
+    eventId: ref.seriesId,
+    seriesId: ref.seriesId,
+  };
 }
 
 export const NOTE_PREFIX = 'note:';
@@ -42,7 +58,7 @@ export async function getAllNotes(): Promise<Note[]> {
 export async function getSeriesNotes(ref: Pick<EventRef, 'calendarId' | 'seriesId'>): Promise<Note[]> {
   const notes = await getAllNotes();
   return notes
-    .filter((n) => n.calendarId === ref.calendarId && n.seriesId === ref.seriesId)
+    .filter((n) => !isSeriesNote(n) && n.calendarId === ref.calendarId && n.seriesId === ref.seriesId)
     .sort(compareByEventTime);
 }
 
@@ -58,7 +74,12 @@ export function compareByEventTime(a: Note, b: Note): number {
  * Saves a note's text. Empty text deletes the note so we never keep
  * placeholder records around.
  */
-export async function saveNote(ref: EventRef, text: string, snapshot: EventSnapshot = {}): Promise<Note | undefined> {
+export async function saveNote(
+  ref: EventRef,
+  text: string,
+  snapshot: EventSnapshot = {},
+  kind?: Note['kind'],
+): Promise<Note | undefined> {
   if (!text.trim()) {
     await deleteNote(ref.key);
     return undefined;
@@ -77,8 +98,21 @@ export async function saveNote(ref: EventRef, text: string, snapshot: EventSnaps
     createdAt: existing?.createdAt ?? now,
     updatedAt: now,
   };
+  if (kind) note.kind = kind;
   await putNote(note);
   return note;
+}
+
+/** Saves a recurring event's pinned note. */
+export function saveSeriesNote(ref: EventRef, text: string, snapshot: EventSnapshot = {}): Promise<Note | undefined> {
+  // A pinned note belongs to the whole series, so don't store one occurrence's time or link.
+  return saveNote(seriesRef(ref), text, { title: snapshot.title }, 'series');
+}
+
+/** Replaces a stored note's text (e.g. ticking a follow-up). Empty text deletes it. */
+export async function updateNoteText(note: Note, text: string): Promise<void> {
+  if (!text.trim()) return deleteNote(note.key);
+  await putNote({ ...note, text, updatedAt: Date.now() });
 }
 
 /** Writes a full note record as-is (used by import and sync merge). */
@@ -151,6 +185,17 @@ export function sanitizeNote(value: unknown): Note | null {
   }
   const str = (v: unknown) => (typeof v === 'string' && v ? v : undefined);
   const url = str(n.url);
+  if (n.kind === 'series') {
+    const seriesId = toEventRef(n.eventId, n.calendarId).seriesId;
+    return {
+      ...seriesRef({ calendarId: n.calendarId, seriesId }),
+      kind: 'series',
+      text: n.text,
+      title: str(n.title),
+      createdAt: Number.isFinite(n.createdAt) ? (n.createdAt as number) : (n.updatedAt as number),
+      updatedAt: n.updatedAt as number,
+    };
+  }
   return {
     ...toEventRef(n.eventId, n.calendarId),
     text: n.text,

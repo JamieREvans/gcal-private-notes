@@ -59,11 +59,13 @@ FREE
 PRO: A ONE-OFF "BUY ME A COFFEE" FROM $1
 Pick any coffee size and you get everything, forever. It supports an independent hobby developer.
 • Unlimited notes
-• Sync between browsers signed in to the same Chrome profile (Brave's sync may not include extension data)
-• History from earlier occurrences of recurring meetings
+• Today: your day's recurring meetings, each with last time's notes, ready in the side panel
+• Follow-ups: every open "- [ ]" item across all your notes in one list. Tick them off there
+• A pinned note for each recurring meeting (goals, ongoing topics), plus history from earlier occurrences
 • Search every note in the side panel
 • Note templates (1:1, meeting, interview)
 • Export to Markdown for Obsidian, Notion, Logseq and other notes apps
+• Sync between browsers signed in to the same Chrome profile (Brave's sync may not include extension data)
 
 Not affiliated with or endorsed by Google. Google Calendar is a trademark of Google LLC.
 ```

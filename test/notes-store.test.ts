@@ -52,3 +52,28 @@ describe('export / import', () => {
     await expect(importNotes({ hello: 'world' })).rejects.toThrow();
   });
 });
+
+describe('pinned series notes', () => {
+  it('are stored per series, excluded from occurrence history and the free limit', async () => {
+    const { saveSeriesNote, getSeriesNotes: series, getAllNotes: all } = await import('../lib/notes-store');
+    const { lockedKeys } = await import('../lib/plan');
+    const ref = toEventRef('s_20261019T100000Z', 'cal');
+    await saveSeriesNote(ref, 'standing agenda', { title: '1:1', when: 'Mon 10am', url: 'https://calendar.google.com/x' });
+    for (let i = 0; i < 5; i++) await saveNote(toEventRef(`e${i}`, 'cal'), `n${i}`);
+
+    const pinned = (await all()).find((n) => n.kind === 'series')!;
+    expect(pinned).toMatchObject({ key: 'cal|s|series', seriesId: 's', title: '1:1', text: 'standing agenda' });
+    expect(pinned.when).toBeUndefined();
+    expect(await series({ calendarId: 'cal', seriesId: 's' })).toEqual([]);
+    expect(lockedKeys(await all(), false).size).toBe(0);
+  });
+
+  it('survive export and import', async () => {
+    const { saveSeriesNote } = await import('../lib/notes-store');
+    await saveSeriesNote(toEventRef('s_20261019T100000Z', 'cal'), 'standing agenda');
+    const file = JSON.parse(JSON.stringify(await exportNotes()));
+    await fakeBrowser.storage.local.clear();
+    expect(await importNotes(file)).toEqual({ imported: 1, skipped: 0 });
+    expect(await getNote('cal|s|series')).toMatchObject({ kind: 'series', text: 'standing agenda' });
+  });
+});

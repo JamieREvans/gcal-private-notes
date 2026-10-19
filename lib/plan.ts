@@ -1,10 +1,11 @@
-import type { Note } from './notes-store';
+import { isSeriesNote, type Note } from './notes-store';
 
 /** Notes a free user can keep unlocked. Older notes are locked (kept, hidden), never deleted. */
 export const FREE_NOTE_LIMIT = 5;
 
+/** Occurrence notes, most recently edited first. Pinned series notes are Pro-only and don't count. */
 function byMostRecentEdit(notes: Note[]): Note[] {
-  return [...notes].sort((a, b) => b.updatedAt - a.updatedAt);
+  return notes.filter((n) => !isSeriesNote(n)).sort((a, b) => b.updatedAt - a.updatedAt);
 }
 
 /** Keys of notes that are locked on the free plan. */

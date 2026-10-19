@@ -190,4 +190,9 @@ export const STYLES = /* css */ `
   color: var(--en-accent);
   border: 1px solid currentColor;
 }
+
+.en-pin-add { margin-top: 6px; color: var(--en-muted); }
+.en-pinned { margin-top: 8px; }
+.en-pinned-label { display: block; font-size: 11px; font-weight: 600; color: var(--en-muted); margin-bottom: 4px; }
+.en-pinned-text { min-height: 36px; background: color-mix(in srgb, var(--en-field) 70%, var(--en-bg)); }
 `;

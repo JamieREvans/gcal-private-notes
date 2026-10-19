@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { getLicense, isPro, onLicenseChanged, type License } from '../lib/license';
-import { getAllNotes, onNotesChanged, type Note } from '../lib/notes-store';
+import { getAllNotes, isSeriesNote, onNotesChanged, type Note } from '../lib/notes-store';
 import { FREE_NOTE_LIMIT, lockedKeys } from '../lib/plan';
 import { getSettings, onSettingsChanged, type Settings } from '../lib/settings';
 
@@ -39,7 +39,7 @@ export function usePlanState(): PlanState {
       notes: all,
       pro,
       locked: lockedKeys(all, pro),
-      usedFreeSlots: Math.min(all.length, FREE_NOTE_LIMIT),
+      usedFreeSlots: Math.min(all.filter((n) => !isSeriesNote(n)).length, FREE_NOTE_LIMIT),
     };
   }, [license, settings, notes]);
 }

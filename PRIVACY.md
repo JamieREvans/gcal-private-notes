@@ -21,7 +21,7 @@ Private Event Notes is a browser extension, made by an independent hobby develop
 On `calendar.google.com`, the extension reads:
 
 - the **event you open** (its identifier, title and time), to attach your note to it; the title and time are saved with your note so you can recognise it later;
-- the **identifiers of events shown on your calendar**, to put a dot on the ones that have notes. These identifiers include the calendar's ID, which is often an email address. They are checked in your browser and are not stored or sent anywhere.
+- the **identifiers of events shown on your calendar**, to put a dot on the ones that have notes and (Pro) to list today's recurring meetings in the side panel. These identifiers include the calendar's ID, which is often an email address. They are processed in your browser and kept only in temporary memory, which is cleared when the browser closes. They are never written to disk or sent anywhere.
 
 It doesn't read anything else on the page.
 

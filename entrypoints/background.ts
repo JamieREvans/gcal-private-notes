@@ -2,7 +2,7 @@ import ExtPay from 'extpay';
 import { browser } from 'wxt/browser';
 import { defineBackground } from 'wxt/utils/define-background';
 import { EXTPAY_ID, getLicense, isPro, setLicense, type License } from '../lib/license';
-import { CURRENT_EVENT_KEY, type Message } from '../lib/messages';
+import { CURRENT_EVENT_KEY, VISIBLE_EVENTS_KEY, type Message } from '../lib/messages';
 import { DEFAULT_SETTINGS, getSettings } from '../lib/settings';
 import { fullSync, startSyncMirror } from '../lib/sync-mirror';
 
@@ -67,6 +67,9 @@ export default defineBackground(() => {
         break;
       case 'current-event':
         browser.storage.session.set({ [CURRENT_EVENT_KEY]: message.event });
+        break;
+      case 'visible-events':
+        browser.storage.session.set({ [VISIBLE_EVENTS_KEY]: message.refs });
         break;
     }
   });
