@@ -20,7 +20,7 @@ export async function exportNotes(): Promise<ExportFile> {
 export async function importNotes(data: unknown): Promise<{ imported: number; skipped: number }> {
   const file = data as Partial<ExportFile>;
   if (file?.format !== 'gcal-event-notes' || !Array.isArray(file.notes)) {
-    throw new Error('This file is not an Event Notes export.');
+    throw new Error('This file is not a Private Event Notes export.');
   }
   const toWrite: Note[] = [];
   let skipped = 0;

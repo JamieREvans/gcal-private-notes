@@ -5,11 +5,11 @@ export default defineConfig({
   // Not '.output': dot-folders are hidden in Finder.
   outDir: 'dist',
   manifest: {
-    name: 'Event Notes for Google Calendar',
-    short_name: 'Event Notes',
+    name: 'Private Event Notes for Google Calendar',
+    short_name: 'Private Event Notes',
     description: 'Private notes on your Google Calendar events, stored only in your browser.',
     permissions: ['storage', 'unlimitedStorage', 'sidePanel'],
-    action: { default_title: 'Event Notes' },
+    action: { default_title: 'Private Event Notes' },
   },
   vite: () => ({
     oxc: { jsx: { runtime: 'automatic', importSource: 'preact' } },

@@ -169,7 +169,7 @@ export function startSyncMirror(isEnabled: () => Promise<boolean>, debounceMs = 
   const timers = new Map<string, ReturnType<typeof setTimeout>>();
   let queue: Promise<unknown> = Promise.resolve();
   const enqueue = (task: () => Promise<unknown>) => {
-    queue = queue.then(task).catch((err) => console.warn('[Event Notes] sync failed', err));
+    queue = queue.then(task).catch((err) => console.warn('[Private Event Notes] sync failed', err));
     return queue;
   };
 

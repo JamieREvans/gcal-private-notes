@@ -154,7 +154,7 @@ function App() {
       <div class="en-options">
         <header class="en-page-header">
           <Logo />
-          <h1>Event Notes settings</h1>
+          <h1>Private Event Notes settings</h1>
         </header>
         <p class="en-subtitle">
           Private notes on your Google Calendar events. They're stored in this browser and never shared with guests.
@@ -204,7 +204,7 @@ function App() {
           <button
             type="button"
             class="en-button"
-            onClick={async () => download(`event-notes-${today()}.json`, JSON.stringify(await exportNotes(), null, 2), 'application/json')}
+            onClick={async () => download(`private-event-notes-${today()}.json`, JSON.stringify(await exportNotes(), null, 2), 'application/json')}
           >
             Export (JSON)
           </button>
@@ -212,7 +212,7 @@ function App() {
             type="button"
             class={`en-button ${plan.pro ? '' : 'en-disabled'}`}
             disabled={!plan.pro}
-            onClick={() => download(`event-notes-${today()}.md`, notesToMarkdown(plan.notes), 'text/markdown')}
+            onClick={() => download(`private-event-notes-${today()}.md`, notesToMarkdown(plan.notes), 'text/markdown')}
           >
             Export as Markdown {!plan.pro && <span class="en-pro">Pro</span>}
           </button>
@@ -238,7 +238,7 @@ function App() {
         )}
 
         <footer class="en-footer">
-          Event Notes is an independent extension made by a hobby developer. It isn't affiliated with Google. Notes
+          Private Event Notes is an independent extension made by a hobby developer. It isn't affiliated with Google. Notes
           stay in this browser (and your browser's own sync, if you turn it on). Payments are handled by
           ExtensionPay and Stripe.{' '}
           <a href={PRIVACY_POLICY_URL} target="_blank" rel="noreferrer">

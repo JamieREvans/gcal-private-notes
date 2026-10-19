@@ -61,7 +61,7 @@ function App() {
     <div class="en-root">
       <header class="en-page-header">
         <Logo />
-        <h1>Event Notes</h1>
+        <h1>Private Event Notes</h1>
         <button type="button" class="en-icon-btn" aria-label="Settings" title="Settings" onClick={openSettings}>
           <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
             <path
@@ -72,7 +72,7 @@ function App() {
           </svg>
         </button>
       </header>
-      <p class="en-subtitle">Private to you. A browser extension, not part of Google Calendar.</p>
+      <p class="en-subtitle">Only visible to you. A browser extension, not part of Google Calendar.</p>
 
       <h2 class="en-section-title">This event</h2>
       {current ? (

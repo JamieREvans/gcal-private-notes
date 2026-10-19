@@ -25,7 +25,7 @@ export function ProCard({ pro, license, compact, lead }: Props) {
     return (
       <div class="en-box en-pro-card">
         <p class="en-pro-title">
-          Event Notes Pro <span class="en-pro">Active</span>
+          Private Event Notes Pro <span class="en-pro">Active</span>
         </p>
         <p>Thank you for supporting a hobby developer. Every feature is unlocked, for good.</p>
         {!compact && (license?.email || license?.planLabel) && (
@@ -40,10 +40,10 @@ export function ProCard({ pro, license, compact, lead }: Props) {
 
   return (
     <div class="en-box en-pro-card">
-      <p class="en-pro-title">Event Notes Pro</p>
+      <p class="en-pro-title">Private Event Notes Pro</p>
       {lead && <p>{lead}</p>}
       <p>
-        Event Notes is built in spare time by one hobby developer. Pro is a one-off “buy me a coffee”: pick any
+        Private Event Notes is built in spare time by one hobby developer. Pro is a one-off “buy me a coffee”: pick any
         size from $1 and you get everything, forever. There's no subscription.
       </p>
       <ul class="en-feature-list">

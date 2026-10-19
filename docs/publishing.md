@@ -26,7 +26,7 @@ Bump `version` in `package.json` for every upload.
 
 ## 3. Store listing (copy to paste)
 
-**Name:** Event Notes for Google Calendar
+**Name:** Private Event Notes for Google Calendar
 
 **Summary (≤132 chars):**
 Private notes on your Google Calendar events. Stored in your browser, never shared with guests. No setup, no extra docs.
@@ -35,7 +35,7 @@ Private notes on your Google Calendar events. Stored in your browser, never shar
 
 > Keep private notes on any Google Calendar event without creating a page for every meeting in your notes app.
 >
-> Click an event and a small "Event Notes · Private to you" box appears right in the event card. Type, and it's saved. Open the event again next week and your note is there.
+> Click an event and a small "Private Event Notes · Only visible to you" box appears right in the event card. Type, and it's saved. Open the event again next week and your note is there.
 >
 > • Private by design: notes are stored in your browser. They're never added to the event or shared with guests or organisers, and they're never sent to the developer.
 > • Works where you already are: in the event popup, the full event page and the browser side panel. Events with notes get a small dot.

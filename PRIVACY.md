@@ -1,8 +1,8 @@
-# Event Notes for Google Calendar: Privacy Policy
+# Private Event Notes for Google Calendar: Privacy Policy
 
 _Last updated: 19 October 2026_
 
-Event Notes is a browser extension, made by an independent hobby developer, that lets you keep private notes on your Google Calendar events. It is not affiliated with or endorsed by Google.
+Private Event Notes is a browser extension, made by an independent hobby developer, that lets you keep private notes on your Google Calendar events. It is not affiliated with or endorsed by Google.
 
 ## What the extension stores
 

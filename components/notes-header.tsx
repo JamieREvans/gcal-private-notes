@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState } from 'preact/hooks';
 import type { ComponentChildren } from 'preact';
 import { FREE_NOTE_LIMIT } from '../lib/plan';
 
-export const EXTENSION_NAME = 'Event Notes';
+export const EXTENSION_NAME = 'Private Event Notes';
 
 export function Logo({ class: className = 'en-logo' }: { class?: string }) {
   return (
@@ -78,7 +78,7 @@ export function NotesHeader({ status, onOpenSettings, onUpgrade, syncEnabled, pr
       <span class="en-name">{EXTENSION_NAME}</span>
       <span aria-hidden="true">·</span>
       <span class="en-private">
-        <LockIcon /> Private to you
+        <LockIcon /> Only visible to you
       </span>
       <button
         ref={buttonRef}
@@ -94,7 +94,7 @@ export function NotesHeader({ status, onOpenSettings, onUpgrade, syncEnabled, pr
       <span class="en-spacer" />
       {status && <span class="en-status">{status}</span>}
       {open && (
-        <div id={popoverId} class="en-popover" role="dialog" aria-label="About Event Notes">
+        <div id={popoverId} class="en-popover" role="dialog" aria-label="About Private Event Notes">
           <p>
             <strong>{EXTENSION_NAME}</strong> is a browser extension. It isn't part of Google Calendar.
           </p>

@@ -1,4 +1,4 @@
-# Event Notes for Google Calendar
+# Private Event Notes for Google Calendar
 
 Private notes on your Google Calendar events, stored in your browser and never shared with guests. A Manifest V3 extension for Chrome and Brave, built with [WXT](https://wxt.dev), Preact and TypeScript.
 

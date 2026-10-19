@@ -33,8 +33,8 @@ beforeEach(() => {
 describe('NoteEditor', () => {
   it('always shows the extension name and privacy cue', async () => {
     const root = await renderEditor('new');
-    expect(root.textContent).toContain('Event Notes');
-    expect(root.textContent).toContain('Private to you');
+    expect(root.textContent).toContain('Private Event Notes');
+    expect(root.textContent).toContain('Only visible to you');
     expect(root.querySelector('textarea')?.placeholder).toBe('Private note, only visible to you');
   });
 

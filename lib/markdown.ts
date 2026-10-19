@@ -25,7 +25,7 @@ export function notesToMarkdown(notes: Note[], exportedAt = new Date()): string 
     .map((g) => g.sort((a, b) => (b.instanceStart ?? '').localeCompare(a.instanceStart ?? '') || b.updatedAt - a.updatedAt))
     .sort((a, b) => Math.max(...b.map((n) => n.updatedAt)) - Math.max(...a.map((n) => n.updatedAt)));
 
-  const out = [`# Event Notes`, ``, `Exported ${exportedAt.toISOString().slice(0, 10)}.`, ``];
+  const out = [`# Private Event Notes`, ``, `Exported ${exportedAt.toISOString().slice(0, 10)}.`, ``];
   for (const group of sorted) {
     if (group.length > 1) out.push(`# ${group[0]!.title || 'Recurring event'} (${group.length} occurrences)`, '');
     for (const n of group) out.push(noteToMarkdown(n));

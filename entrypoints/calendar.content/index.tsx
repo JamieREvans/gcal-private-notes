@@ -114,7 +114,7 @@ export default defineContentScript({
           });
           el.append(dot);
         }
-        const title = locked ? 'Has a locked Event Notes note (free plan)' : 'Has a private Event Notes note';
+        const title = locked ? 'Has a locked private note (free plan)' : 'Has a private note (Private Event Notes)';
         if (dot.title !== title) dot.title = title;
         dot.style.opacity = locked ? '0.5' : '1';
       }
@@ -131,7 +131,7 @@ export default defineContentScript({
           syncPage();
           syncMarkers();
         } catch (err) {
-          console.warn('[Event Notes] could not update the page', err);
+          console.warn('[Private Event Notes] could not update the page', err);
         }
       });
     }

@@ -3,7 +3,7 @@
 Run this in **both Chrome and Brave**, using the unpacked build first and then the Unlisted store build.
 
 ## Core
-- [ ] Click an event. The "Event Notes · Private to you" box appears in the popup. Type a note, close the popup, reopen it: the note is still there.
+- [ ] Click an event. The "Private Event Notes · Only visible to you" box appears in the popup. Type a note, close the popup, reopen it: the note is still there.
 - [ ] Click the ⓘ button: the popover explains this is an extension, notes are private and never shared, and shows the free count. Esc closes it, and so does clicking outside.
 - [ ] **Keyboard shortcuts:** turn on Calendar's keyboard shortcuts (Settings → Keyboard shortcuts). In the notes box, type `e`, `c`, `?`, `j`/`k`, and press Backspace and Delete. Only the text changes: the event is not edited, created or deleted, and the view doesn't move.
 - [ ] Open the event's full page (Edit or "Open details"). The same note appears above the description.

@@ -26,7 +26,7 @@ async function refreshLicense() {
   try {
     await saveUser(await ExtPay(EXTPAY_ID).getUser());
   } catch (err) {
-    console.warn('[Event Notes] could not check Pro status', err);
+    console.warn('[Private Event Notes] could not check Pro status', err);
   }
 }
 
@@ -57,10 +57,10 @@ export default defineBackground(() => {
         browser.runtime.openOptionsPage();
         break;
       case 'open-upgrade':
-        ExtPay(EXTPAY_ID).openPaymentPage().catch((err) => console.warn('[Event Notes] payment page failed', err));
+        ExtPay(EXTPAY_ID).openPaymentPage().catch((err) => console.warn('[Private Event Notes] payment page failed', err));
         break;
       case 'open-login':
-        ExtPay(EXTPAY_ID).openLoginPage().catch((err) => console.warn('[Event Notes] login page failed', err));
+        ExtPay(EXTPAY_ID).openLoginPage().catch((err) => console.warn('[Private Event Notes] login page failed', err));
         break;
       case 'refresh-license':
         refreshLicense();
@@ -91,7 +91,7 @@ export default defineBackground(() => {
       isPro(value<License>('license', license, { paid: false, checkedAt: 0 }, which));
     const was = allowedAt('oldValue');
     const now = allowedAt('newValue');
-    const log = (err: unknown) => console.warn('[Event Notes] sync failed', err);
+    const log = (err: unknown) => console.warn('[Private Event Notes] sync failed', err);
     if (now && !was) fullSync().catch(log);
     if (was && !now) clearSyncMirror().catch(log);
   });
