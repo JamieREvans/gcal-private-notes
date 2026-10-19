@@ -10,10 +10,9 @@ Brave installs extensions straight from the Chrome Web Store, so one listing cov
 - [ ] **ExtensionPay:** sign up at <https://extensionpay.com>, register the extension and connect a Stripe account. Stripe will ask for identity and bank details.
   - Create three **one-time** plans: **$1 / $3 / $5** (for example nicknamed `coffee-small`, `coffee`, `coffee-large`). Every plan unlocks the same Pro. Calling `openPaymentPage()` with no plan shows all three, which gives "pay what you want, $1 minimum".
   - Turn on login, so buyers can restore Pro in other browsers.
-  - Put the ExtensionPay extension id in `lib/license.ts` (`EXTPAY_ID`).
+  - [x] ExtensionPay id `private-notes-for-google-calendar` is set in `lib/license.ts`.
   - Test with Stripe test cards in test mode before going live.
-- [ ] **Repos:** the code lives in a **private** repo. Create a small **public** repo (for example `event-notes-site`) with GitHub Pages turned on, holding `PRIVACY.md` and a support page. That gives the store a privacy-policy URL and gives users somewhere to report issues. Claude replaces the `YOUR-GITHUB` placeholders once the repos exist.
-  - **Licence blocker before publishing:** the `extpay` library is AGPL-3.0, which conflicts with closed-source distribution. You've emailed ExtensionPay to ask for permission or a commercial licence (draft in `docs/extensionpay-licence-email.md`). If they say no, switch to Lemon Squeezy licence keys before publishing.
+- [x] **Public repo:** <https://github.com/JamieREvans/gcal-private-notes>, licensed AGPL-3.0 (the same licence as the bundled `extpay` library). The privacy policy URL for the store is <https://github.com/JamieREvans/gcal-private-notes/blob/main/PRIVACY.md>.
 
 ## 2. Build the package
 
@@ -78,7 +77,7 @@ Lets users write private notes attached to their Google Calendar events and view
 
 **Data usage:** Notes are stored locally and are not collected. The developer receives nothing. If the form asks about payment info, declare that payments are handled by ExtensionPay and Stripe and that only purchase status is checked. Tick the certifications: no selling of data, no use unrelated to the single purpose, no creditworthiness use.
 
-**Privacy policy URL:** the public URL of `PRIVACY.md`.
+**Privacy policy URL:** <https://github.com/JamieREvans/gcal-private-notes/blob/main/PRIVACY.md>
 
 ## 5. Submit
 

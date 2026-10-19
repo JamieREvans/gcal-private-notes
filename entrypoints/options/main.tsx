@@ -15,8 +15,7 @@ import { updateSettings, type Settings } from '../../lib/settings';
 import { BUDGET_BYTES, SYNC_PREFIX } from '../../lib/sync-mirror';
 import { DEFAULT_TEMPLATES, getTemplates, saveTemplates, type Template } from '../../lib/templates';
 
-// TODO(before publishing): point at the published privacy policy (see docs/publishing.md).
-const PRIVACY_POLICY_URL = 'https://github.com/YOUR-GITHUB/gcal-notes/blob/main/PRIVACY.md';
+const PRIVACY_POLICY_URL = 'https://github.com/JamieREvans/gcal-private-notes/blob/main/PRIVACY.md';
 
 function download(filename: string, contents: string, type: string) {
   const url = URL.createObjectURL(new Blob([contents], { type }));

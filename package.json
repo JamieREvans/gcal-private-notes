@@ -3,6 +3,8 @@
   "description": "Private notes on your Google Calendar events, stored only in your browser.",
   "version": "0.1.0",
   "private": true,
+  "license": "AGPL-3.0-or-later",
+  "repository": "github:JamieREvans/gcal-private-notes",
   "type": "module",
   "scripts": {
     "dev": "wxt",

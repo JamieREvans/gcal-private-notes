@@ -38,3 +38,7 @@ Dev builds show a **Simulate Pro** toggle at the bottom of Settings.
 If the notes box or the dots stop appearing, inspect the page and update `lib/gcal-dom.ts`. Then update the synthetic skeletons in `test/fixtures/` to match. Never put real calendar data in fixtures.
 
 See `docs/publishing.md` for the Chrome Web Store and ExtensionPay setup, and `docs/testing.md` for the manual test pass.
+
+## Licence
+
+[AGPL-3.0](LICENSE). Bundles [ExtPay.js](https://github.com/Glench/ExtPay), which is also AGPL-3.0.

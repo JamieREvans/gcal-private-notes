@@ -1,10 +1,7 @@
 import { browser } from 'wxt/browser';
 
-/**
- * The extension id registered on extensionpay.com.
- * TODO(before publishing): replace with the id you register.
- */
-export const EXTPAY_ID = 'event-notes';
+/** The extension id registered on extensionpay.com. */
+export const EXTPAY_ID = 'private-notes-for-google-calendar';
 
 export interface License {
   paid: boolean;

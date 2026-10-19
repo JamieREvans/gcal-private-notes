@@ -33,4 +33,4 @@ Use **Settings → Delete all notes**, or uninstall the extension, which removes
 
 ## Contact
 
-Questions: open an issue at https://github.com/YOUR-GITHUB/gcal-notes/issues
+Questions: open an issue at https://github.com/JamieREvans/gcal-private-notes/issues
