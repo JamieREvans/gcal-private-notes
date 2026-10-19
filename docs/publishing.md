@@ -24,42 +24,71 @@ npm run zip       # → dist/gcal-notes-<version>-chrome.zip
 
 Bump `version` in `package.json` for every upload.
 
-## 3. Store listing (copy to paste)
+## 3. Store listing tab
 
-**Name:** Private Event Notes for Google Calendar
+**Summary:** comes from the manifest, so there's nothing to type:
+> Private notes on your Google Calendar events. Never added to the event or shared with guests.
 
-**Summary (≤132 chars):**
-Private notes on your Google Calendar events. Stored in your browser, never shared with guests. No setup, no extra docs.
+**Description** (paste as-is; the store shows plain text, so bullets are "•"):
 
-**Description:**
+```
+Keep private notes on any Google Calendar event, without creating a doc for every meeting.
 
-> Keep private notes on any Google Calendar event without creating a page for every meeting in your notes app.
->
-> Click an event and a small "Private Event Notes · Only visible to you" box appears right in the event card. Type, and it's saved. Open the event again next week and your note is there.
->
-> • Private by design: notes are stored in your browser. They're never added to the event or shared with guests or organisers, and they're never sent to the developer.
-> • Works where you already are: in the event popup, the full event page and the browser side panel. Events with notes get a small dot.
-> • Made for recurring meetings: each occurrence gets its own note.
-> • Your data is yours: export everything to JSON at any time.
->
-> Free: up to 5 notes (older notes are kept and unlock when you upgrade, never deleted).
->
-> Pro is a one-off "buy me a coffee" from $1 that supports an independent hobby developer:
-> • Unlimited notes
-> • Sync across your Chrome browsers (Brave's sync may not include extension data)
-> • History from earlier occurrences of recurring meetings (great for 1:1s)
-> • Search every note in the side panel
-> • Note templates
-> • Export to Markdown for Obsidian, Notion, Logseq and other notes apps
->
-> Not affiliated with or endorsed by Google. "Google Calendar" is a trademark of Google LLC.
+Click an event and a small "Private Event Notes" box appears right in the event card. Type, and it's saved. Open the event again next week and your note is still there.
 
-**Category:** Productivity · **Language:** English
+WHY PEOPLE USE IT
+• 1:1s that build on each other: recurring meetings show your notes from earlier occurrences
+• Interview and client-call notes that stay out of shared calendars
+• No setup: no account, no new app, no structure to maintain
 
-**Graphics** (all in `store/`, regenerate with `npm run build && npm run e2e -- --screenshots && npm run store-assets`):
-- Icon: `public/icon/128.png`
-- Screenshots (1280×800): `store/screenshot-1-popup.png`, `store/screenshot-2-sidepanel.png`, `store/screenshot-3-settings.png`. These show the real extension UI over a mock calendar with made-up data. A shot taken in real Google Calendar (on a demo calendar with no real names) would make a stronger first screenshot later.
-- Small promo tile (440×280): `store/promo-small-440x280.png`
+PRIVATE BY DESIGN
+• Notes are stored in your browser, and never added to the event or shared with guests or organisers
+• Nothing is sent to the developer. No analytics, no tracking
+• Open source (AGPL-3.0): https://github.com/JamieREvans/gcal-private-notes
+
+WHERE YOUR NOTES APPEAR
+• In the event popup and on the full event page
+• As a subtle dot on events that have notes
+• In the browser side panel
+Each can be turned on or off in Settings.
+
+FREE
+• Up to 5 notes. Older notes are kept safely and unlock when you upgrade, never deleted
+• Export everything to JSON at any time
+
+PRO: A ONE-OFF "BUY ME A COFFEE" FROM $1
+Pick any coffee size and you get everything, forever. It supports an independent hobby developer.
+• Unlimited notes
+• Sync between browsers signed in to the same Chrome profile (Brave's sync may not include extension data)
+• History from earlier occurrences of recurring meetings
+• Search every note in the side panel
+• Note templates (1:1, meeting, interview)
+• Export to Markdown for Obsidian, Notion, Logseq and other notes apps
+
+Not affiliated with or endorsed by Google. Google Calendar is a trademark of Google LLC.
+```
+
+**Category:** Productivity → **Workflow & Planning**. If that sub-category isn't offered, pick **Tools**.
+**Language:** English.
+
+**Graphics** (all in `store/`; regenerate with `npm run build && npm run e2e -- --screenshots && npm run demo-video && npm run store-assets`):
+
+| Field | File |
+| --- | --- |
+| Store icon (128×128) | `public/icon/128.png` |
+| Screenshots (1280×800; up to 5, in this order) | `store/screenshot-1-notes.png`, `-2-private.png`, `-3-search.png`, `-4-dots.png`, `-5-pro.png` |
+| Same screenshots at 640×400, if preferred | `store/640x400/` |
+| Small promo tile (440×280) | `store/promo-small-440x280.png` |
+| Marquee promo tile (1400×560) | `store/promo-marquee-1400x560.png` |
+| Global promo video (YouTube URL) | Upload `store/demo-video.webm` to YouTube (Unlisted is fine) and paste the link |
+
+The screenshots and video show the real extension running on an illustrative calendar page with made-up data.
+
+**Additional fields:**
+- Official URL: leave as None. It needs a domain verified in Google Search Console.
+- Homepage URL: `https://github.com/JamieREvans/gcal-private-notes`
+- Support URL: `https://github.com/JamieREvans/gcal-private-notes/issues`
+- Mature content: No.
 
 ## 4. Privacy practices tab
 
@@ -87,7 +116,13 @@ Then tick all three certifications: you don't sell user data, you don't use it f
 
 **Privacy policy URL:** <https://github.com/JamieREvans/gcal-private-notes/blob/main/PRIVACY.md>
 
-## 5. Submit
+## 5. Distribution tab
+
+- **Payments:** tick **Contains in-app purchases**, because Pro is bought through ExtensionPay.
+- **Visibility:** **Unlisted** for the first release, then **Public**.
+- **Regions:** all regions.
+
+## 6. Submit
 
 - [ ] Upload the zip, fill in the listing and set **Visibility: Unlisted** for the first release. Install it from the store link in both Chrome and Brave. Run through `docs/testing.md` and make one real $1 purchase.
 - [ ] Switch to **Public**. Review usually takes a few days and can take longer for extensions with host permissions.

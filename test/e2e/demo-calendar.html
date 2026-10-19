@@ -1,0 +1,62 @@
+<!doctype html>
+<!-- Illustrative Google-Calendar-like week view for the demo video. All data is fake. -->
+<html><head><meta charset="utf-8"><title>Calendar demo</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Google Sans', Roboto, 'Helvetica Neue', Arial, sans-serif; color: #1f1f1f; background: #f8fafd; overflow: hidden; }
+  header { height: 64px; display: flex; align-items: center; gap: 16px; padding: 0 24px; }
+  header .logo { width: 36px; height: 36px; border-radius: 8px; background: #fff; border: 1px solid #dadce0; display: grid; place-items: center; font-weight: 700; color: #1a73e8; }
+  header h1 { font-size: 22px; font-weight: 400; margin: 0; }
+  header .today { border: 1px solid #747775; border-radius: 18px; padding: 6px 16px; font-size: 14px; }
+  .wrap { display: flex; margin: 0 16px; background: #fff; border-radius: 16px; height: calc(100vh - 80px); overflow: hidden; }
+  .side { width: 60px; padding-top: 64px; }
+  .hour { height: 56px; font-size: 10px; color: #70757a; text-align: right; padding-right: 8px; position: relative; top: -6px; }
+  .main { flex: 1; position: relative; }
+  .days { display: flex; height: 64px; border-bottom: 1px solid #dadce0; }
+  .days div { flex: 1; text-align: center; padding-top: 12px; font-size: 11px; color: #70757a; letter-spacing: .08em; }
+  .days div b { display: block; font-size: 24px; font-weight: 400; color: #3c4043; letter-spacing: 0; }
+  .days div.now b { background: #0b57d0; color: #fff; border-radius: 50%; width: 40px; height: 40px; line-height: 40px; margin: 2px auto 0; }
+  .grid { position: absolute; inset: 64px 0 0 0; background-image: linear-gradient(#e8eaed 1px, transparent 1px); background-size: 100% 56px; }
+  .chip { color: #fff; border-radius: 6px; padding: 4px 8px; font-size: 12px; cursor: pointer; margin-left: 4px; overflow: hidden; }
+  .chip b { display: block; font-weight: 500; } .chip span { opacity: .9; }
+  [role=dialog] { position: fixed; width: 448px; background: #f0f4f9; border-radius: 28px; box-shadow: 0 4px 24px rgba(0,0,0,.2); padding: 20px 0 16px; z-index: 5; }
+  .row { display: flex; padding: 2px 28px; font-size: 14px; color: #444746; }
+  .heading { font-size: 22px; color: #1f1f1f; display: block; margin-bottom: 4px; }
+  #xDetDlgWhen div { line-height: 1.5; }
+</style></head>
+<body>
+  <header><div class="logo">31</div><h1>October 2026</h1><div class="today">Today</div></header>
+  <div class="wrap" role="main">
+    <div class="side"><div class="hour"><span>7 AM</span></div><div class="hour"><span>8 AM</span></div><div class="hour"><span>9 AM</span></div><div class="hour"><span>10 AM</span></div><div class="hour"><span>11 AM</span></div><div class="hour"><span>12 PM</span></div><div class="hour"><span>1 PM</span></div><div class="hour"><span>2 PM</span></div><div class="hour"><span>3 PM</span></div><div class="hour"><span>4 PM</span></div><div class="hour"><span>5 PM</span></div><div class="hour"><span>6 PM</span></div></div>
+    <div class="main">
+      <div class="days"><div class="now">MON<b>19</b></div><div class="">TUE<b>20</b></div><div class="">WED<b>21</b></div><div class="">THU<b>22</b></div><div class="">FRI<b>23</b></div></div>
+      <div class="grid">
+        <div class="chip" role="button" data-eventchip="" data-eventid="d2Vla2x5MW9uMV8yMDI2MTAxOVQxMzAwMDBaIGFsZXhAZXhhbXBsZS5jb20" data-title="Weekly 1:1 with Sam" data-when="Monday, October 19⋅9:00 – 9:30am" data-rec="Weekly on Monday" style="position:absolute;top:112px;left:0%;width:calc(20% - 8px);height:24.0px;background:#039be5"><b>Weekly 1:1 with Sam</b></div><div class="chip" role="button" data-eventchip="" data-eventid="ZGVzaWduODggYWxleEBleGFtcGxlLmNvbQ" data-title="Design review" data-when="Monday, October 19⋅11:00am – 12:00pm" data-rec="" style="position:absolute;top:224px;left:0%;width:calc(20% - 8px);height:52px;background:#33b679"><b>Design review</b><span>11:00am – 12:00pm</span></div><div class="chip" role="button" data-eventchip="" data-eventid="aW50ZXJ2aWV3MzEgYWxleEBleGFtcGxlLmNvbQ" data-title="Interview: Senior Engineer" data-when="Tuesday, October 20⋅10:00 – 11:00am" data-rec="" style="position:absolute;top:168px;left:20%;width:calc(20% - 8px);height:52px;background:#8e24aa"><b>Interview: Senior Engineer</b><span>10:00 – 11:00am</span></div><div class="chip" role="button" data-eventchip="" data-eventid="Y29mZmVlMTIgYWxleEBleGFtcGxlLmNvbQ" data-title="Coffee with Priya" data-when="Tuesday, October 20⋅2:00 – 2:30pm" data-rec="" style="position:absolute;top:392px;left:20%;width:calc(20% - 8px);height:24.0px;background:#f4511e"><b>Coffee with Priya</b></div><div class="chip" role="button" data-eventchip="" data-eventid="c3RhbmR1cF8yMDI2MTAyMVQxMzMwMDBaIGFsZXhAZXhhbXBsZS5jb20" data-title="Team standup" data-when="Wednesday, October 21⋅9:30 – 10:00am" data-rec="Weekly on weekdays" style="position:absolute;top:140.0px;left:40%;width:calc(20% - 8px);height:24.0px;background:#039be5"><b>Team standup</b></div><div class="chip" role="button" data-eventchip="" data-eventid="cGxhbm5pbmc0MiBhbGV4QGV4YW1wbGUuY29t" data-title="Quarterly planning" data-when="Thursday, October 22⋅2:00 – 3:30pm" data-rec="" style="position:absolute;top:392px;left:60%;width:calc(20% - 8px);height:80.0px;background:#e67c73"><b>Quarterly planning</b><span>2:00 – 3:30pm</span></div><div class="chip" role="button" data-eventchip="" data-eventid="ZGVudGlzdDcgYWxleEBt" data-title="Dentist" data-when="Friday, October 23⋅8:00 – 8:45am" data-rec="" style="position:absolute;top:56px;left:80%;width:calc(20% - 8px);height:38.0px;background:#616161"><b>Dentist</b></div><div class="chip" role="button" data-eventchip="" data-eventid="YWNtZTUgYWxleEBleGFtcGxlLmNvbQ" data-title="Client call: Acme" data-when="Friday, October 23⋅1:00 – 2:00pm" data-rec="" style="position:absolute;top:336px;left:80%;width:calc(20% - 8px);height:52px;background:#33b679"><b>Client call: Acme</b><span>1:00 – 2:00pm</span></div>
+      </div>
+    </div>
+  </div>
+<script>
+  document.addEventListener('click', (e) => {
+    const chip = e.target.closest('[data-eventchip]');
+    if (!chip) return;
+    document.querySelector('[role=dialog]')?.remove();
+    const r = chip.getBoundingClientRect();
+    const d = document.createElement('div');
+    d.setAttribute('role', 'dialog'); d.setAttribute('aria-labelledby', 'rAECCd'); d.setAttribute('data-layout-mode', 'bubble');
+    d.style.top = Math.min(r.top, innerHeight - 520) + 'px';
+    d.style.left = (r.right + 12 + 448 < innerWidth ? r.right + 12 : r.left - 460) + 'px';
+    const holder = document.createElement('div'); holder.setAttribute('data-eventid', chip.dataset.eventid);
+    const rows = document.createElement('div'); rows.setAttribute('jsname', 'sV9x3c');
+    const row = document.createElement('div'); row.className = 'row';
+    const when = document.createElement('div'); when.id = 'xDetDlgWhen';
+    const h = document.createElement('span'); h.setAttribute('role', 'heading'); h.id = 'rAECCd'; h.className = 'heading'; h.textContent = chip.dataset.title;
+    const l1 = document.createElement('div'); l1.textContent = chip.dataset.when;
+    when.append(h, l1);
+    if (chip.dataset.rec) { const l2 = document.createElement('div'); l2.textContent = chip.dataset.rec; when.append(l2); }
+    row.append(when); rows.append(row);
+    const cal = document.createElement('div'); cal.className = 'row'; cal.id = 'xDetDlgCal'; cal.textContent = '📅  Alex Example';
+    rows.append(cal); holder.append(rows); d.append(holder); document.body.append(d);
+  });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') document.querySelector('[role=dialog]')?.remove(); });
+</script>
+</body></html>

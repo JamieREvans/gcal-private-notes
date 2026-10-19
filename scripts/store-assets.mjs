@@ -1,7 +1,7 @@
 // Builds Chrome Web Store graphics in store/ from the e2e screenshots.
 // Usage: npm run build && npm run e2e -- --screenshots && npm run store-assets
 import sharp from 'sharp';
-import { readFile } from 'node:fs/promises';
+import { mkdir, readFile } from 'node:fs/promises';
 
 const FONT = "'Helvetica Neue', Helvetica, Arial, sans-serif";
 const BG = '#fff6df';
@@ -52,29 +52,56 @@ async function roundCorners(buf, w, h, r) {
   return sharp(buf).composite([{ input: mask, blend: 'dest-in' }]).png().toBuffer();
 }
 
-await screenshot('store/screenshot-1-popup.png', {
-  headline: ['Private notes,', 'right in your', 'calendar'],
-  sub: ['Click any event and jot it down.', 'Only visible to you: never added', 'to the event or shared with guests.'],
-  image: 'store/screenshots/raw-popup.png',
-  crop: { left: 300, top: 120, width: 448, height: 358 },
-  scale: 1.45,
-});
+// Screenshots 1–4 are stills of the real extension from the demo recording.
+const stills = [
+  ['demo-3', 'screenshot-1-notes.png'],
+  ['demo-4', 'screenshot-2-private.png'],
+  ['demo-6', 'screenshot-3-search.png'],
+  ['demo-5', 'screenshot-4-dots.png'],
+];
+for (const [from, to] of stills) {
+  await sharp(`store/screenshots/${from}.png`).resize(1280, 800).png().toFile(`store/${to}`);
+  console.log('wrote', `store/${to}`);
+}
 
-await screenshot('store/screenshot-2-sidepanel.png', {
-  headline: ['Every note,', 'one search away'],
-  sub: ['Search all your notes in the side panel.', 'Recurring meetings keep their history,', 'so your 1:1s build on each other.'],
-  image: 'store/screenshots/raw-sidepanel.png',
-  crop: { left: 0, top: 0, width: 400, height: 470 },
-  scale: 1.45,
-});
-
-await screenshot('store/screenshot-3-settings.png', {
+await screenshot('store/screenshot-5-pro.png', {
   headline: ['Free for 5 notes.', 'Pro from $1.'],
   sub: ['A one-off “buy me a coffee” that', 'supports an independent developer.', 'No subscription, no tracking.'],
   image: 'store/screenshots/raw-settings.png',
   crop: { left: 350, top: 0, width: 580, height: 420 },
   scale: 1.2,
 });
+
+// The store also accepts 640×400; same images, smaller.
+await mkdir('store/640x400', { recursive: true });
+for (const name of [...stills.map(([, to]) => to), 'screenshot-5-pro.png']) {
+  await sharp(`store/${name}`).resize(640, 400).png().toFile(`store/640x400/${name}`);
+}
+console.log('wrote store/640x400/*');
+
+// Marquee promo tile, 1400×560.
+{
+  const crop = await sharp('store/screenshots/demo-3.png')
+    .extract({ left: 322, top: 240, width: 448, height: 450 })
+    .resize(Math.round(448 * 1.06), Math.round(450 * 1.06))
+    .png()
+    .toBuffer();
+  const { width: w, height: h } = await sharp(crop).metadata();
+  await sharp(
+    canvas(
+      1400,
+      560,
+      `<g transform="translate(96 120) scale(0.75)">${iconInner}</g>` +
+        textBlock(96, 300, ['Private Event Notes'], 60, INK, 700) +
+        textBlock(96, 350, ['for Google Calendar'], 32, MUTED, 500) +
+        textBlock(96, 430, ['A private sticky note on every event.', 'Only visible to you. No account needed.'], 26, INK, 400, 1.4),
+    ),
+  )
+    .composite([{ input: await roundCorners(crop, w, h, 24), left: 1400 - w - 110, top: Math.round((560 - h) / 2) }])
+    .png()
+    .toFile('store/promo-marquee-1400x560.png');
+  console.log('wrote store/promo-marquee-1400x560.png');
+}
 
 // Small promo tile, 440×280.
 await sharp(

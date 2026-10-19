@@ -15,7 +15,8 @@
     "postinstall": "wxt prepare",
     "icons": "node scripts/icons.mjs",
     "e2e": "node test/e2e/run.mjs",
-    "store-assets": "node scripts/store-assets.mjs"
+    "store-assets": "node scripts/store-assets.mjs",
+    "demo-video": "node scripts/demo-video.mjs"
   },
   "dependencies": {
     "extpay": "^3.1.2",
