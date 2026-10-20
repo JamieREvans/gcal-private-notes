@@ -38,6 +38,8 @@ Dev builds show a **Simulate Pro** toggle at the bottom of Settings.
 
 If the notes box or the dots stop appearing, inspect the page and update `lib/gcal-dom.ts`. Then update the synthetic skeletons in `test/fixtures/` to match. Never put real calendar data in fixtures.
 
+Releases: `npm version patch && git push --follow-tags` (GitHub Actions submits to the Chrome Web Store; setup in `docs/publishing.md`).
+
 See `docs/publishing.md` for the Chrome Web Store and ExtensionPay setup, and `docs/testing.md` for the manual test pass.
 
 ## Licence

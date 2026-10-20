@@ -125,6 +125,34 @@ Then tick all three certifications: you don't sell user data, you don't use it f
 - **Visibility:** **Unlisted** for the first release, then **Public**.
 - **Regions:** all regions.
 
+## Automated releases (GitHub Actions)
+
+`.github/workflows/release.yml` builds, tests (unit + end-to-end), zips and submits to the Chrome Web Store using the **Chrome Web Store API v2**. (v1.1 and its OAuth refresh tokens stopped working on 15 Oct 2026.)
+
+**One-time setup:**
+1. **Google Cloud:** create (or pick) a project at https://console.cloud.google.com.
+2. **Enable the API:** APIs & Services → Library → search **Chrome Web Store API** → Enable.
+3. **Service account:** IAM & Admin → Service Accounts → **Create service account**. Any name works (e.g. `cws-publisher`). It needs no roles or permissions, so skip that step.
+4. **Key:** open the service account → Keys → Add key → Create new key → **JSON**. A `.json` file downloads. Treat it like a password: don't commit it, and delete it once it's saved in GitHub.
+5. **Link it to your publisher:** in the Chrome Web Store Developer Dashboard → **Account**, add the service account's email (`client_email` in the JSON file). Only one service account can be linked per publisher.
+6. **IDs:**
+   - **Publisher ID:** the part after `/devconsole/` in the dashboard URL: `https://chrome.google.com/webstore/devconsole/<publisher-id>`.
+   - **Extension ID:** the 32-letter item ID shown on the item's dashboard page and in its store URL.
+7. **GitHub secrets:** repo → Settings → Secrets and variables → Actions → New repository secret:
+   - `CHROME_EXTENSION_ID`
+   - `CHROME_PUBLISHER_ID`
+   - `CHROME_SERVICE_ACCOUNT_JSON`: paste the whole JSON file's contents.
+8. **Test it:** Actions → Release → Run workflow (dry run ticked). It builds, runs the tests and checks the credentials without uploading.
+
+**Releasing:**
+```bash
+npm version patch        # or minor / major: bumps package.json, commits, tags vX.Y.Z
+git push --follow-tags   # the tag triggers the Action
+```
+The Action fails, rather than cancelling anything, if a review is already in progress. Once Google approves, the version publishes automatically. The zip is also attached to a GitHub release.
+
+The API only handles the package. Store listing text, screenshots, the video and privacy answers are still edited in the dashboard.
+
 ## 6. Submit
 
 - [ ] Upload the zip, fill in the listing and set **Visibility: Unlisted** for the first release. Install it from the store link in both Chrome and Brave. Run through `docs/testing.md` and make one real $1 purchase.

@@ -1,0 +1,94 @@
+# Builds, tests and submits the extension to the Chrome Web Store.
+#
+# Release:  npm version <patch|minor|major>  &&  git push --follow-tags
+#           (the pushed vX.Y.Z tag must match package.json's version)
+# Check credentials without uploading: Actions → Release → Run workflow (dry run on).
+#
+# Repository secrets (Settings → Secrets and variables → Actions):
+#   CHROME_EXTENSION_ID            the item ID from the store dashboard / listing URL
+#   CHROME_PUBLISHER_ID            from https://chrome.google.com/webstore/devconsole/<publisher-id>
+#   CHROME_SERVICE_ACCOUNT_JSON    the whole service-account JSON key file, pasted as-is
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run: check credentials and build, but do not upload or submit'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write # to attach the zip to a GitHub release
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Check the tag matches package.json
+        if: github.event_name == 'push'
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match package.json version $version"
+            exit 1
+          fi
+
+      - run: npm ci
+
+      - name: Type-check and unit tests
+        run: npm run typecheck && npm test
+
+      - name: End-to-end check (real Chromium, Calendar's CSP)
+        run: |
+          npx playwright install --with-deps chromium
+          npm run build
+          npm run e2e
+
+      - name: Build store zip
+        run: npm run zip
+
+      - name: Submit to the Chrome Web Store
+        env:
+          SA_JSON: ${{ secrets.CHROME_SERVICE_ACCOUNT_JSON }}
+          CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
+          CHROME_PUBLISHER_ID: ${{ secrets.CHROME_PUBLISHER_ID }}
+          CHROME_API_VERSION: v2
+          # Publish automatically once Google approves the review.
+          CHROME_PUBLISH_TYPE: DEFAULT_PUBLISH
+          # Fail (rather than cancel it) if a review is already in progress.
+          CHROME_CANCEL_PENDING: 'false'
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+        run: |
+          for name in SA_JSON CHROME_EXTENSION_ID CHROME_PUBLISHER_ID; do
+            if [ -z "${!name}" ]; then echo "::error::Missing secret for $name"; exit 1; fi
+          done
+          # jq decodes the key's "\n" escapes into the real newlines the signer needs.
+          CHROME_SERVICE_ACCOUNT_CLIENT_EMAIL="$(jq -r .client_email <<<"$SA_JSON")"
+          CHROME_SERVICE_ACCOUNT_PRIVATE_KEY="$(jq -r .private_key <<<"$SA_JSON")"
+          export CHROME_SERVICE_ACCOUNT_CLIENT_EMAIL CHROME_SERVICE_ACCOUNT_PRIVATE_KEY
+          zip="$(ls dist/*-chrome.zip)"
+          if [ "$DRY_RUN" = "true" ]; then
+            npx wxt submit --chrome-zip "$zip" --dry-run
+          else
+            npx wxt submit --chrome-zip "$zip"
+          fi
+
+      - name: Attach the zip to a GitHub release
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/*-chrome.zip --title "$GITHUB_REF_NAME" --generate-notes
