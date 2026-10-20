@@ -40,9 +40,17 @@ const context = await chromium.launchPersistentContext(await mkdtemp(join(tmpdir
 const errors = [];
 context.on('weberror', (e) => errors.push(String(e.error())));
 
+// Google Calendar's real policy (captured Oct 2026), so the extension is tested under
+// Trusted Types and a strict nonce-based script policy, like on the real page.
+const CALENDAR_CSP =
+  "require-trusted-types-for 'script'; script-src 'report-sample' 'nonce-e2e' 'unsafe-inline' 'strict-dynamic' https: http: 'unsafe-eval'; object-src 'none'; base-uri 'self'";
 await context.route('https://calendar.google.com/**', (route) => {
   const isEventPage = /\/r\/eventedit\//.test(new URL(route.request().url()).pathname);
-  route.fulfill({ contentType: 'text/html', body: isEventPage ? EVENT_PAGE : MOCK });
+  route.fulfill({
+    contentType: 'text/html',
+    headers: { 'content-security-policy': CALENDAR_CSP },
+    body: isEventPage ? EVENT_PAGE : MOCK,
+  });
 });
 
 let [worker] = context.serviceWorkers();
@@ -67,7 +75,13 @@ const boxText = async () => {
   await page.waitForTimeout(150); // let plan state load
   return shadowText();
 };
-const ready = (box) => box.locator('textarea:not([disabled])').first().waitFor({ timeout: 5000 });
+// Runs fn(shadowRoot) inside the popup's notes box.
+const shadowEval = (fn, selector = '[role=dialog] event-notes') =>
+  page.evaluate(([src, sel]) => new Function('root', `return (${src})(root)`)(document.querySelector(sel).shadowRoot), [fn.toString(), selector]);
+const waitForFocus = (inner, selector = '[role=dialog] event-notes') =>
+  page.waitForFunction(([sel, inn]) => document.querySelector(sel)?.shadowRoot?.activeElement?.closest(inn), [selector, inner], { timeout: 5000 });
+// The note field is ready: a plain textarea (free) or the rich editor (Pro).
+const ready = (box) => box.locator('textarea:not([disabled]), .en-rich-content').first().waitFor({ timeout: 5000 });
 
 console.log(`Extension ${extId}`);
 
@@ -209,6 +223,7 @@ await step('Pro: pin a note to every occurrence of a recurring meeting', async (
   await page.getByText('Weekly 1:1 with Sam').first().click();
   await ready(notesBox);
   await notesBox.getByRole('button', { name: /Pin a note to every occurrence/ }).click();
+  await waitForFocus('.en-pinned-text .en-rich-content');
   await page.keyboard.type('Goals: promo case by Q1');
   await page.waitForTimeout(800);
   const pinned = (await storage())['note:alex@example.com|weekly1on1|series'];
@@ -218,7 +233,58 @@ await step('Pro: pin a note to every occurrence of a recurring meeting', async (
   await page.keyboard.press('Escape');
   await page.getByText('Weekly 1:1 with Sam').nth(1).click();
   await ready(notesBox);
-  assert.equal(await notesBox.locator('.en-pinned-text').inputValue(), 'Goals: promo case by Q1');
+  await notesBox.locator('.en-pinned-text .en-rich-content').waitFor();
+  assert.equal(await shadowEval((root) => root.querySelector('.en-pinned-text .en-rich-content').innerText.trim()), 'Goals: promo case by Q1');
+  await page.keyboard.press('Escape');
+});
+
+await step('Pro: rich text toolbar formats text and saves Markdown (under Calendar\'s Trusted Types policy)', async () => {
+  await page.keyboard.press('Escape').catch(() => {});
+  await page.getByText('Quarterly planning').click();
+  const content = notesBox.locator('.en-rich-content').first();
+  await content.waitFor({ timeout: 5000 });
+  await page.evaluate(() => (window.__keys = []));
+  await content.click();
+  await page.keyboard.press('ControlOrMeta+a');
+  await page.keyboard.press('Delete');
+  await notesBox.getByRole('button', { name: 'Large heading' }).click();
+  await page.keyboard.type('Budget');
+  await page.keyboard.press('Enter');
+  await notesBox.getByRole('button', { name: 'Bold' }).click();
+  await page.keyboard.type('Decision:');
+  await notesBox.getByRole('button', { name: 'Bold' }).click();
+  await page.keyboard.type(' hire two');
+  await page.keyboard.press('Enter');
+  await notesBox.getByRole('button', { name: 'Bulleted list' }).click();
+  await page.keyboard.type('first point');
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Enter'); // leave the list
+  await notesBox.getByRole('button', { name: /Checklist/ }).click();
+  await page.keyboard.type('Send budget to finance');
+  await page.waitForTimeout(800);
+  const saved = (await storage())['note:alex@example.com|planning42'];
+  assert.equal(saved.text, '# Budget\n\n**Decision:** hire two\n\n- first point\n\n- [ ] Send budget to finance');
+  assert.deepEqual(await page.evaluate(() => window.__keys), [], 'page saw no keystrokes');
+});
+
+await step('Pro: pasting rich HTML works under Trusted Types and keeps only safe formatting', async () => {
+  const content = notesBox.locator('.en-rich-content').first();
+  await content.click();
+  await page.keyboard.press('End');
+  await page.keyboard.press('Enter');
+  await page.evaluate(() => {
+    const target = document.querySelector('[role=dialog] event-notes').shadowRoot.querySelector('.en-rich-content');
+    const data = new DataTransfer();
+    data.setData('text/html', '<p>From <b>Docs</b> <img src=x onerror="window.__pwned=1"> <a href="javascript:alert(1)">bad</a> <a href="https://ok.example/">good</a></p>');
+    data.setData('text/plain', 'From Docs bad good');
+    target.dispatchEvent(new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true }));
+  });
+  await page.waitForTimeout(800);
+  const saved = (await storage())['note:alex@example.com|planning42'].text;
+  assert.match(saved, /From \*\*Docs\*\*/);
+  assert.match(saved, /\[good\]\(https:\/\/ok\.example\/?\)/);
+  assert.doesNotMatch(saved, /javascript:|onerror/);
+  assert.equal(await page.evaluate(() => window.__pwned), undefined);
   await page.keyboard.press('Escape');
 });
 
@@ -252,14 +318,16 @@ await step('Pro: Today lists the meeting with last time\'s note; Follow-ups tick
   if (SHOTS) await panel.screenshot({ path: 'store/screenshots/raw-today.png' });
 
   await panel.getByRole('tab', { name: 'Follow-ups' }).click();
-  assert.match(await panel.locator('[role=tabpanel]').innerText(), /1 open follow-up[\s\S]*Intro to design lead/);
+  const openCount = async () => Number(/(\d+) open follow-up/.exec(await panel.locator('[role=tabpanel]').innerText())[1]);
+  const before = await openCount();
+  assert.match(await panel.locator('[role=tabpanel]').innerText(), /Weekly 1:1 with Sam[\s\S]*Intro to design lead/);
   if (SHOTS) await panel.screenshot({ path: 'store/screenshots/raw-followups.png' });
   // Ticked items leave the open list straight away, so click rather than check().
   await panel.getByRole('checkbox', { name: 'Intro to design lead' }).click();
   await panel.waitForTimeout(300);
   const updated = (await storage())['note:alex@example.com|weekly1on1_20261012T130000Z'];
   assert.match(updated.text, /- \[x\] Intro to design lead/);
-  assert.match(await panel.locator('[role=tabpanel]').innerText(), /0 open follow-ups/);
+  assert.equal(await openCount(), before - 1);
   await panel.close();
 });
 
@@ -301,7 +369,11 @@ if (SHOTS) {
   await page.keyboard.press('Escape').catch(() => {});
   await page.getByText('Weekly 1:1 with Sam').first().click();
   await ready(notesBox);
-  await notesBox.locator('textarea').first().fill('Sam: shipped the onboarding revamp 🎉\n\nFollow-ups:\n- Intro to design lead\n- Revisit Q4 scope');
+  const content = notesBox.locator('.en-rich-content').first();
+  await content.waitFor();
+  await content.click();
+  await page.keyboard.press('ControlOrMeta+a');
+  await page.keyboard.type('Sam: shipped the onboarding revamp 🎉\nFollow-ups:\n[ ] Intro to design lead\nRevisit Q4 scope');
   await page.waitForTimeout(600);
   await notesBox.locator('summary').click();
   await page.screenshot({ path: 'store/screenshots/raw-popup.png' });

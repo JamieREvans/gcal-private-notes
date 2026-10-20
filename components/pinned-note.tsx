@@ -1,6 +1,7 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import type { EventRef } from '../lib/event-id';
 import { saveSeriesNote, type EventSnapshot, type Note } from '../lib/notes-store';
+import { NoteInput } from './note-input';
 
 const SAVE_DELAY_MS = 400;
 
@@ -8,16 +9,17 @@ interface Props {
   eventRef: EventRef;
   pinned?: Note;
   getSnapshot?: () => EventSnapshot;
+  rich?: boolean;
 }
 
 /** A standing note shown on every occurrence of a recurring event (Pro). */
-export function PinnedNote({ eventRef, pinned, getSnapshot }: Props) {
+export function PinnedNote({ eventRef, pinned, getSnapshot, rich = true }: Props) {
   const [open, setOpen] = useState(!!pinned);
+  // Focus the field as it appears when opened by a click, so fast typing isn't lost.
+  const [focusOnOpen, setFocusOnOpen] = useState(false);
   const [text, setText] = useState(pinned?.text ?? '');
   const focused = useRef(false);
   const pending = useRef<{ timer: ReturnType<typeof setTimeout>; text: string } | null>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const focusOnOpen = useRef(false);
 
   const flush = () => {
     const p = pending.current;
@@ -34,28 +36,13 @@ export function PinnedNote({ eventRef, pinned, getSnapshot }: Props) {
 
   useEffect(() => () => flush(), [eventRef.seriesId]);
 
-  useLayoutEffect(() => {
-    const el = textareaRef.current;
-    if (!el) return;
-    el.style.height = 'auto';
-    el.style.height = `${Math.min(el.scrollHeight + 2, 200)}px`;
-  }, [text, open]);
-
-  // Focus in the same frame the textarea appears, so fast typing isn't lost.
-  useLayoutEffect(() => {
-    if (open && focusOnOpen.current) {
-      focusOnOpen.current = false;
-      textareaRef.current?.focus();
-    }
-  }, [open]);
-
   if (!open) {
     return (
       <button
         type="button"
         class="en-chip en-pin-add"
         onClick={() => {
-          focusOnOpen.current = true;
+          setFocusOnOpen(true);
           setOpen(true);
         }}
       >
@@ -69,14 +56,16 @@ export function PinnedNote({ eventRef, pinned, getSnapshot }: Props) {
       <label class="en-pinned-label" for={`pin-${eventRef.seriesId}`}>
         📌 Pinned to every occurrence
       </label>
-      <textarea
+      <NoteInput
         id={`pin-${eventRef.seriesId}`}
-        ref={textareaRef}
-        class="en-textarea en-pinned-text"
+        class="en-pinned-text"
+        rich={rich}
+        autoFocus={focusOnOpen}
+        maxHeight={200}
         value={text}
         placeholder="Standing notes for this series, e.g. goals, ongoing topics"
-        onInput={(e) => {
-          const value = (e.currentTarget as HTMLTextAreaElement).value;
+        ariaLabel="Pinned note for every occurrence"
+        onInput={(value) => {
           setText(value);
           if (pending.current) clearTimeout(pending.current.timer);
           pending.current = { text: value, timer: setTimeout(flush, SAVE_DELAY_MS) };
@@ -85,7 +74,7 @@ export function PinnedNote({ eventRef, pinned, getSnapshot }: Props) {
         onBlur={() => {
           focused.current = false;
           flush();
-          if (!text.trim()) setOpen(false);
+          if (!(pending.current?.text ?? text).trim()) setOpen(false);
         }}
       />
     </div>

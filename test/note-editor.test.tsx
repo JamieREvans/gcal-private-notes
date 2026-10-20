@@ -5,6 +5,7 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { NoteEditor } from '../components/note-editor';
 import { toEventRef } from '../lib/event-id';
 import { setLicense } from '../lib/license';
+import { updateSettings } from '../lib/settings';
 import { putNote, type Note } from '../lib/notes-store';
 
 const note = (id: string, updatedAt: number, title = `Event ${id}`): Note => ({
@@ -58,9 +59,18 @@ describe('NoteEditor', () => {
 
   it('never warns or locks for Pro', async () => {
     await setLicense({ paid: true });
+    await updateSettings({ richText: false });
     for (let i = 0; i < 6; i++) await putNote(note(`e${i}`, 100 + i));
     const locked = await renderEditor('e0');
     expect(locked.textContent).not.toContain('locked');
     expect(locked.querySelector('textarea')?.value).toBe('note e0');
+  });
+
+  it('falls back to plain text when the rich editor cannot load', async () => {
+    await setLicense({ paid: true });
+    await putNote(note('e0', 100));
+    const root = await renderEditor('e0');
+    await act(() => new Promise((r) => setTimeout(r, 50)));
+    expect(root.querySelector('textarea')?.value).toBe('note e0');
   });
 });

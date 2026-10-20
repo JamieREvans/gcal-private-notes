@@ -8,6 +8,7 @@ import { ProCard } from '../../components/pro-card';
 import { usePlanState } from '../../components/use-plan-state';
 import { encodeEid, toEventRef, type EventRef } from '../../lib/event-id';
 import { noteToMarkdown } from '../../lib/markdown';
+import { toPlainText } from '../../lib/plain-text';
 import { CURRENT_EVENT_KEY, VISIBLE_EVENTS_KEY, type CurrentEvent } from '../../lib/messages';
 import { isSeriesNote, seriesRef, updateNoteText, type Note } from '../../lib/notes-store';
 import { todaysPrep, type PrepItem } from '../../lib/prep';
@@ -136,7 +137,7 @@ function AllNotes({ notes }: { notes: Note[] }) {
               ) : (
                 <button type="button" class="en-item" key={n.key} onClick={() => setExpanded(n.key)}>
                   <div class="en-date">{grouped ? noteLabel(n) : `${n.title || 'Untitled event'} · ${noteLabel(n)}`}</div>
-                  <div class="en-preview">{n.text}</div>
+                  <div class="en-preview">{toPlainText(n.text)}</div>
                 </button>
               ),
             )}
@@ -182,7 +183,7 @@ function FollowUps({ notes }: { notes: Note[] }) {
                     checked={t.done}
                     onChange={(e) => updateNoteText(note, setTaskDone(note.text, t.line, (e.currentTarget as HTMLInputElement).checked))}
                   />
-                  {t.text}
+                  {toPlainText(t.text)}
                 </label>
               </li>
             ))}
@@ -218,13 +219,13 @@ function Today({ items }: { items: PrepItem[] }) {
             {item.pinned && (
               <div class="en-prep-block">
                 <div class="en-date">📌 Pinned</div>
-                <div class="en-preview">{item.pinned.text}</div>
+                <div class="en-preview">{toPlainText(item.pinned.text)}</div>
               </div>
             )}
             {last && (
               <div class="en-prep-block">
                 <div class="en-date">Last time · {formatOccurrence(last)}</div>
-                <div class="en-preview">{last.text}</div>
+                <div class="en-preview">{toPlainText(last.text)}</div>
               </div>
             )}
             {writing === item.ref.key ? (

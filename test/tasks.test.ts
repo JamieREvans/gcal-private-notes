@@ -38,3 +38,14 @@ describe('follow-ups', () => {
     expect(groups.map((g) => g.tasks.map((t) => t.text))).toEqual([['standing'], ['newer'], ['old']]);
   });
 });
+
+describe('toPlainText', async () => {
+  const { toPlainText } = await import('../lib/plain-text');
+  it('strips Markdown for previews', () => {
+    expect(toPlainText('# Agenda\n**Decisions** and *ideas*, ~~old~~, `code`, [doc](https://x.y), 2 \\* 3, snake\\_case, a &lt; b')).toBe(
+      'Agenda\nDecisions and ideas, old, code, doc, 2 * 3, snake_case, a < b',
+    );
+    expect(toPlainText('- [ ] Intro to design lead\n- [x] Done\n> quoted')).toBe('☐ Intro to design lead\n☑ Done\nquoted');
+    expect(toPlainText('2 * 3 * 4 and file_name_here')).toBe('2 * 3 * 4 and file_name_here');
+  });
+});

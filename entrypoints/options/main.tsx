@@ -183,6 +183,14 @@ function App() {
         <Toggle label="Full event page" hint="When you open an event to view or edit it." checked={settings.showOnEventPage} onChange={(v) => set({ showOnEventPage: v })} />
         <Toggle label="Dot on events with notes" hint="A small marker on calendar grid events that have a note." checked={settings.showMarkers} onChange={(v) => set({ showMarkers: v })} />
         <Toggle
+          label="Rich text formatting"
+          hint="Headings, bold, lists and checklists with a toolbar. Notes are saved as Markdown, so exports stay clean."
+          pro={!plan.pro}
+          disabled={!plan.pro}
+          checked={plan.pro && settings.richText}
+          onChange={(v) => set({ richText: v })}
+        />
+        <Toggle
           label="Series history"
           hint="Notes from other occurrences of a recurring event, shown under the note."
           pro={!plan.pro}

@@ -195,4 +195,59 @@ export const STYLES = /* css */ `
 .en-pinned { margin-top: 8px; }
 .en-pinned-label { display: block; font-size: 11px; font-weight: 600; color: var(--en-muted); margin-bottom: 4px; }
 .en-pinned-text { min-height: 36px; background: color-mix(in srgb, var(--en-field) 70%, var(--en-bg)); }
+
+/* Rich text editor (Pro). ProseMirror's own core CSS is included here because
+   its auto-injected styles would land in the page's <head>, outside our shadow root. */
+.en-rich { background: var(--en-field); border: 1px solid var(--en-border); border-radius: 6px; }
+.en-rich-focused { border-color: var(--en-accent); }
+.en-toolbar { display: flex; flex-wrap: wrap; gap: 1px; padding: 3px 4px; border-bottom: 1px solid var(--en-border); }
+.en-toolbar-idle { opacity: 0.5; }
+.en-tool {
+  all: unset;
+  cursor: pointer;
+  min-width: 24px;
+  height: 24px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 4px;
+  color: var(--en-text);
+  font-size: 13px;
+}
+.en-tool:hover { background: color-mix(in srgb, var(--en-accent) 12%, transparent); }
+.en-tool:focus-visible { outline: 2px solid var(--en-accent); }
+.en-tool-active { background: color-mix(in srgb, var(--en-accent) 22%, transparent); color: var(--en-accent); }
+.en-tool-text { font-size: 11px; font-weight: 700; }
+.en-rich-host { overflow: auto; }
+.en-rich-loading { padding: 6px 8px; min-height: 56px; color: var(--en-muted); white-space: pre-wrap; }
+.en-rich-content { outline: none; padding: 6px 8px; min-height: 56px; color: var(--en-text); cursor: text; }
+.en-pinned-text .en-rich-content, .en-pinned-text.en-rich .en-rich-loading { min-height: 36px; }
+.ProseMirror { position: relative; word-wrap: break-word; white-space: pre-wrap; white-space: break-spaces; font-variant-ligatures: none; font-feature-settings: 'liga' 0; }
+.ProseMirror [contenteditable='false'] { white-space: normal; }
+.ProseMirror-hideselection *::selection { background: transparent; }
+.ProseMirror-hideselection { caret-color: transparent; }
+img.ProseMirror-separator { display: inline !important; border: none !important; margin: 0 !important; }
+.en-rich-content p { margin: 0 0 4px; }
+.en-rich-content > :last-child { margin-bottom: 0; }
+.en-rich-content h1 { font-size: 16px; font-weight: 700; margin: 6px 0 4px; }
+.en-rich-content h2 { font-size: 14px; font-weight: 700; margin: 6px 0 4px; }
+.en-rich-content > :first-child { margin-top: 0; }
+.en-rich-content ul, .en-rich-content ol { margin: 2px 0 4px; padding-left: 20px; }
+.en-rich-content li p { margin: 0; }
+.en-rich-content ul[data-type='taskList'] { list-style: none; padding-left: 2px; }
+.en-rich-content li[data-checked] { display: flex; gap: 6px; align-items: flex-start; }
+.en-rich-content li[data-checked] > label { flex: none; margin-top: 1px; }
+.en-rich-content li[data-checked] > div { flex: 1; min-width: 0; }
+.en-rich-content li[data-checked='true'] > div { color: var(--en-muted); text-decoration: line-through; }
+.en-rich-content input[type='checkbox'] { accent-color: var(--en-accent); margin: 2px 0 0; cursor: pointer; }
+.en-rich-content blockquote { margin: 4px 0; padding-left: 8px; border-left: 3px solid var(--en-border); color: var(--en-muted); }
+.en-rich-content code { font-family: ui-monospace, Menlo, monospace; font-size: 12px; background: var(--en-bg); padding: 0 3px; border-radius: 3px; }
+.en-rich-content a { color: var(--en-accent); text-decoration: underline; cursor: pointer; }
+.en-rich-content p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  color: var(--en-muted);
+  opacity: 0.8;
+  pointer-events: none;
+}
 `;

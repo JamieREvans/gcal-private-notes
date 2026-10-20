@@ -4,6 +4,7 @@ import { FREE_NOTE_LIMIT } from '../lib/plan';
 
 export const PRO_FEATURES = [
   `Unlimited notes (free keeps your ${FREE_NOTE_LIMIT} most recent)`,
+  'Rich text: headings, bold, bullet lists and checklists',
   "Today: your day's recurring meetings with last time's notes",
   'Follow-ups: every open “- [ ]” item across your notes, in one list',
   'History and a pinned note for every recurring meeting',

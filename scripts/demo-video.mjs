@@ -90,12 +90,22 @@ await wait(2200);
 
 // 2. Open the 1:1 and write
 await page.getByText('Weekly 1:1 with Sam').click();
-await box.locator('textarea:not([disabled])').waitFor();
+await box.locator('.en-rich-content').waitFor();
 await caption('Click an event. Your private note is right there.');
 await wait(1800);
-await box.locator('textarea').click();
+await box.locator('.en-rich-content').click();
 await caption('Just type. It saves as you go.');
-await page.keyboard.type('Sam shipped the onboarding revamp 🎉\n\nFollow-ups:\n- Intro to the design lead\n- Revisit Q4 scope', { delay: 38 });
+await page.keyboard.type('Sam shipped the onboarding revamp 🎉', { delay: 38 });
+await page.keyboard.press('Enter');
+await caption('Format with a click: headings, bold, lists, checklists');
+await box.getByRole('button', { name: 'Bold' }).click();
+await page.keyboard.type('Follow-ups', { delay: 38 });
+await box.getByRole('button', { name: 'Bold' }).click();
+await page.keyboard.press('Enter');
+await box.getByRole('button', { name: /Checklist/ }).click();
+await page.keyboard.type('Intro to the design lead', { delay: 38 });
+await page.keyboard.press('Enter');
+await page.keyboard.type('Revisit Q4 scope', { delay: 38 });
 await still();
 await wait(1200);
 

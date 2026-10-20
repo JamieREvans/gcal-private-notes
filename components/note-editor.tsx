@@ -1,7 +1,8 @@
 import type { ComponentChildren } from 'preact';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
+import { useCallback, useEffect, useRef, useState } from 'preact/hooks';
 import type { EventRef } from '../lib/event-id';
 import { sendMessage } from '../lib/messages';
+import { toPlainText } from '../lib/plain-text';
 import {
   deleteNote,
   isRecurring,
@@ -14,6 +15,7 @@ import {
 import { FREE_NOTE_LIMIT, noteLockedByNewNote } from '../lib/plan';
 import { isSyncable } from '../lib/sync-mirror';
 import { getTemplates, type Template } from '../lib/templates';
+import { NoteInput, type InputHandle } from './note-input';
 import { NotesHeader } from './notes-header';
 import { PinnedNote } from './pinned-note';
 import { usePlanState } from './use-plan-state';
@@ -41,7 +43,7 @@ export function NoteEditor({ eventRef, getSnapshot, autoFocus }: Props) {
   const [focusedUi, setFocusedUi] = useState(false);
   const [capDismissed, setCapDismissed] = useState(false);
   const [templates, setTemplates] = useState<Template[]>([]);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const inputRef = useRef<InputHandle | null>(null);
   const focused = useRef(false);
   const pending = useRef<{ timer: ReturnType<typeof setTimeout>; text: string } | null>(null);
 
@@ -76,16 +78,6 @@ export function NoteEditor({ eventRef, getSnapshot, autoFocus }: Props) {
     if (plan.pro) getTemplates().then(setTemplates);
   }, [plan.pro]);
 
-  useLayoutEffect(() => {
-    const el = textareaRef.current;
-    if (!el) return;
-    el.style.height = 'auto';
-    el.style.height = `${Math.min(el.scrollHeight + 2, 320)}px`;
-  }, [text, loaded]);
-
-  useEffect(() => {
-    if (loaded && autoFocus) textareaRef.current?.focus();
-  }, [loaded]);
 
   const setValue = (value: string) => {
     setText(value);
@@ -142,11 +134,12 @@ export function NoteEditor({ eventRef, getSnapshot, autoFocus }: Props) {
         </>,
       )}
       {wouldLock && focusedUi && <CapBanner note={wouldLock} onDismiss={() => setCapDismissed(true)} />}
-      <textarea
-        ref={textareaRef}
-        class="en-textarea"
+      <NoteInput
+        inputRef={inputRef}
+        rich={plan.pro && plan.settings?.richText !== false}
+        autoFocus={autoFocus}
         value={text}
-        onInput={(e) => setValue((e.currentTarget as HTMLTextAreaElement).value)}
+        onInput={setValue}
         onFocus={() => {
           focused.current = true;
           setFocusedUi(true);
@@ -157,8 +150,7 @@ export function NoteEditor({ eventRef, getSnapshot, autoFocus }: Props) {
         }}
         disabled={!loaded}
         placeholder="Private note, only visible to you"
-        aria-label="Private note for this event"
-        spellcheck
+        ariaLabel="Private note for this event"
       />
       {plan.pro && !text && templates.length > 0 && (
         <div class="en-templates">
@@ -170,7 +162,7 @@ export function NoteEditor({ eventRef, getSnapshot, autoFocus }: Props) {
               class="en-chip"
               onClick={() => {
                 setValue(t.body);
-                textareaRef.current?.focus();
+                setTimeout(() => inputRef.current?.focus());
               }}
             >
               {t.name}
@@ -179,7 +171,12 @@ export function NoteEditor({ eventRef, getSnapshot, autoFocus }: Props) {
         </div>
       )}
       {plan.pro && isRecurring(eventRef) && (
-        <PinnedNote eventRef={eventRef} pinned={pinned} getSnapshot={getSnapshot} />
+        <PinnedNote
+          eventRef={eventRef}
+          pinned={pinned}
+          getSnapshot={getSnapshot}
+          rich={plan.settings?.richText !== false}
+        />
       )}
       {plan.settings?.showSeriesHistory !== false &&
         others.length > 0 &&
@@ -270,7 +267,7 @@ function SeriesHistory({ notes }: { notes: Note[] }) {
         {notes.map((n) => (
           <li key={n.key}>
             <div class="en-date">{formatOccurrence(n)}</div>
-            <div class="en-text">{n.text}</div>
+            <div class="en-text">{toPlainText(n.text)}</div>
           </li>
         ))}
       </ol>

@@ -5,6 +5,8 @@ export interface Settings {
   showOnEventPage: boolean;
   showMarkers: boolean;
   showSeriesHistory: boolean;
+  /** Pro: formatted editing (bold, headings, lists) instead of plain text. */
+  richText: boolean;
   /** Mirror notes into browser sync storage (oldest are evicted from sync only). */
   syncEnabled: boolean;
 }
@@ -14,6 +16,7 @@ export const DEFAULT_SETTINGS: Settings = {
   showOnEventPage: true,
   showMarkers: true,
   showSeriesHistory: true,
+  richText: true,
   syncEnabled: false,
 };
 

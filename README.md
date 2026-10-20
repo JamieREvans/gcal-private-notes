@@ -31,6 +31,7 @@ Dev builds show a **Simulate Pro** toggle at the bottom of Settings.
 | `lib/event-id.ts` | Decodes Calendar's `eid` into calendar, event, series and occurrence |
 | `lib/notes-store.ts` | Notes in `chrome.storage.local` (the source of truth) |
 | `lib/sync-mirror.ts` | Optional mirror into `chrome.storage.sync` that evicts the oldest from sync only |
+| `editor/rich-editor.ts` | Pro rich-text editor (TipTap). Stores Markdown. Built separately (`npm run build:editor`) and lazy-loaded from `rich/editor.js` |
 | `lib/plan.ts`, `lib/license.ts` | Free limit (5 unlocked notes; older ones are locked, never deleted) and Pro status |
 
 ## When Google Calendar changes

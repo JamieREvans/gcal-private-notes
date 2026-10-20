@@ -59,6 +59,7 @@ FREE
 PRO: A ONE-OFF "BUY ME A COFFEE" FROM $1
 Pick any coffee size and you get everything, forever. It supports an independent hobby developer.
 • Unlimited notes
+• Rich text: headings, bold, italics, bullet and numbered lists, checklists and links, with a simple toolbar
 • Today: your day's recurring meetings, each with last time's notes, ready in the side panel
 • Follow-ups: every open "- [ ]" item across all your notes in one list. Tick them off there
 • A pinned note for each recurring meeting (goals, ongoing topics), plus history from earlier occurrences

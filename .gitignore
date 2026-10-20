@@ -5,3 +5,4 @@ dist
 .DS_Store
 store/screenshots/
 roadmap.md
+public/rich/
