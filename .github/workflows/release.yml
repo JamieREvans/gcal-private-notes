@@ -73,9 +73,11 @@ jobs:
           CHROME_CANCEL_PENDING: 'false'
           DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
         run: |
-          for name in SA_JSON CHROME_EXTENSION_ID CHROME_PUBLISHER_ID; do
-            if [ -z "${!name}" ]; then echo "::error::Missing secret for $name"; exit 1; fi
-          done
+          missing=""
+          [ -z "$SA_JSON" ] && missing="$missing CHROME_SERVICE_ACCOUNT_JSON"
+          [ -z "$CHROME_EXTENSION_ID" ] && missing="$missing CHROME_EXTENSION_ID"
+          [ -z "$CHROME_PUBLISHER_ID" ] && missing="$missing CHROME_PUBLISHER_ID"
+          if [ -n "$missing" ]; then echo "::error::Missing repository secrets:$missing"; exit 1; fi
           # jq decodes the key's "\n" escapes into the real newlines the signer needs.
           CHROME_SERVICE_ACCOUNT_CLIENT_EMAIL="$(jq -r .client_email <<<"$SA_JSON")"
           CHROME_SERVICE_ACCOUNT_PRIVATE_KEY="$(jq -r .private_key <<<"$SA_JSON")"
