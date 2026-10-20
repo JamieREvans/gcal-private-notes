@@ -42,14 +42,17 @@ await worker.evaluate(
   (items) => chrome.storage.local.set(items),
   Object.fromEntries([
     ['license', { paid: true, checkedAt: Date.now() }],
-    note('weekly1on1_20261012T130000Z', 'Sam wants to lead the Q4 launch.\nAsked about the promo timeline.', 'Weekly 1:1 with Sam', '2026-10-12T13:00:00Z', 7),
+    note('weekly1on1_20261012T130000Z', 'Sam wants to lead the Q4 launch.\nAsked about the promo timeline.\n\n- [ ] Share the promo criteria\n- [ ] Book a skip-level with Dana', 'Weekly 1:1 with Sam', '2026-10-12T13:00:00Z', 7),
     note('weekly1on1_20261005T130000Z', 'Back from leave. Onboarding revamp is the priority.', 'Weekly 1:1 with Sam', '2026-10-05T13:00:00Z', 14),
-    note('acme5', 'Acme wants the Q4 rollout split into two phases.', 'Client call: Acme', undefined, 2, 'Fri, Oct 16 · 1:00 – 2:00pm'),
+    note('acme5', 'Acme wants the Q4 rollout split into two phases.\n\n- [ ] Send the phased rollout plan', 'Client call: Acme', undefined, 2, 'Fri, Oct 16 · 1:00 – 2:00pm'),
+    ['note:alex@example.com|weekly1on1|series', { key: 'alex@example.com|weekly1on1|series', calendarId: 'alex@example.com', eventId: 'weekly1on1', seriesId: 'weekly1on1', kind: 'series', title: 'Weekly 1:1 with Sam', text: 'Goals: lead the Q4 launch, promo case by Q1', createdAt: Date.now() - 20 * DAY, updatedAt: Date.now() - 20 * DAY }],
     note('interview31', 'Strong systems design. Probe on testing culture.', 'Interview: Senior Engineer', undefined, 3, 'Thu, Oct 15 · 10:00 – 11:00am'),
   ]),
 );
 
 const page = await context.newPage();
+// The illustrative week is 19–23 Oct 2026; pin "now" to that Monday morning so Today has the 1:1.
+await page.clock.setFixedTime(new Date(2026, 9, 19, 8, 30));
 const wait = (ms) => page.waitForTimeout(ms);
 // Saves a still per scene (store/screenshots/demo-N.png); store-assets turns some into store screenshots.
 await mkdir('store/screenshots', { recursive: true });
@@ -63,7 +66,7 @@ async function caption(text) {
       el = document.createElement('div');
       el.id = 'demo-caption';
       Object.assign(el.style, {
-        position: 'fixed', left: '50%', bottom: '28px', transform: 'translateX(-50%)', zIndex: '2147483647',
+        position: 'fixed', left: '50%', top: '12px', transform: 'translateX(-50%)', zIndex: '2147483647',
         background: 'rgba(32, 28, 18, 0.92)', color: '#fff', padding: '12px 22px', borderRadius: '999px',
         font: "500 20px 'Helvetica Neue', Arial, sans-serif", boxShadow: '0 6px 24px rgba(0,0,0,.25)',
         transition: 'opacity .25s', whiteSpace: 'nowrap',
@@ -90,19 +93,19 @@ await wait(2200);
 
 // 2. Open the 1:1 and write
 await page.getByText('Weekly 1:1 with Sam').click();
-await box.locator('.en-rich-content').waitFor();
+await box.locator('.en-rich-content').first().waitFor();
 await caption('Click an event. Your private note is right there.');
 await wait(1800);
-await box.locator('.en-rich-content').click();
+await box.locator('.en-rich-content').first().click();
 await caption('Just type. It saves as you go.');
 await page.keyboard.type('Sam shipped the onboarding revamp 🎉', { delay: 38 });
 await page.keyboard.press('Enter');
 await caption('Format with a click: headings, bold, lists, checklists');
-await box.getByRole('button', { name: 'Bold' }).click();
+await box.locator('.en-rich').first().getByRole('button', { name: 'Bold' }).click();
 await page.keyboard.type('Follow-ups', { delay: 38 });
-await box.getByRole('button', { name: 'Bold' }).click();
+await box.locator('.en-rich').first().getByRole('button', { name: 'Bold' }).click();
 await page.keyboard.press('Enter');
-await box.getByRole('button', { name: /Checklist/ }).click();
+await box.locator('.en-rich').first().getByRole('button', { name: /Checklist/ }).click();
 await page.keyboard.type('Intro to the design lead', { delay: 38 });
 await page.keyboard.press('Enter');
 await page.keyboard.type('Revisit Q4 scope', { delay: 38 });
@@ -130,13 +133,31 @@ await caption('Events with notes get a subtle dot');
 await still();
 await wait(2600);
 
-// 6. Side panel search
+// 6. Side panel: Today (start from a fresh panel, so the views are what's on screen)
+await worker.evaluate(() => chrome.storage.session.remove('currentEvent'));
 await page.goto(`chrome-extension://${extId}/sidepanel.html`);
 await page.addStyleTag({
   content: `html, body { background: #f8fafd !important; }
-    .en-root { max-width: 440px; margin: 32px auto 0; min-height: 0 !important; border-radius: 18px;
+    .en-root { max-width: 440px; margin: 72px auto 0; min-height: 0 !important; border-radius: 18px;
       box-shadow: 0 6px 28px rgba(0,0,0,.14); padding-bottom: 20px; }`,
 });
+await page.getByRole('tab', { name: /Today \(1\)/ }).click();
+await caption("Prep in seconds: today's meetings with last time's notes");
+await wait(500);
+await still();
+await wait(3200);
+
+// 7. Follow-ups
+await page.getByRole('tab', { name: 'Follow-ups' }).click();
+await caption('Every open follow-up, in one list');
+await wait(1500);
+await page.getByRole('checkbox', { name: 'Share the promo criteria' }).click();
+await wait(400);
+await still();
+await wait(2600);
+
+// 8. Search
+await page.getByRole('tab', { name: 'All notes' }).click();
 await caption('Search every note from the side panel');
 await page.getByPlaceholder('Search notes and event titles').click();
 await page.keyboard.type('Q4', { delay: 120 });

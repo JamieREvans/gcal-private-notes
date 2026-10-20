@@ -43,7 +43,7 @@
     const r = chip.getBoundingClientRect();
     const d = document.createElement('div');
     d.setAttribute('role', 'dialog'); d.setAttribute('aria-labelledby', 'rAECCd'); d.setAttribute('data-layout-mode', 'bubble');
-    d.style.top = Math.min(r.top, innerHeight - 520) + 'px';
+    d.style.top = Math.max(72, Math.min(r.top - 40, innerHeight - 660)) + 'px';
     d.style.left = (r.right + 12 + 448 < innerWidth ? r.right + 12 : r.left - 460) + 'px';
     const holder = document.createElement('div'); holder.setAttribute('data-eventid', chip.dataset.eventid);
     const rows = document.createElement('div'); rows.setAttribute('jsname', 'sV9x3c');

@@ -79,7 +79,7 @@ Not affiliated with or endorsed by Google. Google Calendar is a trademark of Goo
 | Field | File |
 | --- | --- |
 | Store icon (128×128) | `public/icon/128.png` |
-| Screenshots (1280×800; up to 5, in this order) | `store/screenshot-1-notes.png`, `-2-private.png`, `-3-search.png`, `-4-dots.png`, `-5-pro.png` |
+| Screenshots (1280×800; up to 5, in this order) | `store/screenshot-1-notes.png`, `-2-private.png`, `-3-today.png`, `-4-followups.png`, `-5-pro.png` |
 | Same screenshots at 640×400, if preferred | `store/640x400/` |
 | Small promo tile (440×280) | `store/promo-small-440x280.png` |
 | Marquee promo tile (1400×560) | `store/promo-marquee-1400x560.png` |

@@ -56,8 +56,8 @@ async function roundCorners(buf, w, h, r) {
 const stills = [
   ['demo-3', 'screenshot-1-notes.png'],
   ['demo-4', 'screenshot-2-private.png'],
-  ['demo-6', 'screenshot-3-search.png'],
-  ['demo-5', 'screenshot-4-dots.png'],
+  ['demo-6', 'screenshot-3-today.png'],
+  ['demo-7', 'screenshot-4-followups.png'],
 ];
 for (const [from, to] of stills) {
   await sharp(`store/screenshots/${from}.png`).resize(1280, 800).png().toFile(`store/${to}`);
@@ -68,8 +68,8 @@ await screenshot('store/screenshot-5-pro.png', {
   headline: ['Free for 5 notes.', 'Pro from $1.'],
   sub: ['A one-off “buy me a coffee” that', 'supports an independent developer.', 'No subscription, no tracking.'],
   image: 'store/screenshots/raw-settings.png',
-  crop: { left: 350, top: 0, width: 580, height: 420 },
-  scale: 1.2,
+  crop: { left: 350, top: 0, width: 580, height: 490 },
+  scale: 1.18,
 });
 
 // The store also accepts 640×400; same images, smaller.
@@ -82,8 +82,8 @@ console.log('wrote store/640x400/*');
 // Marquee promo tile, 1400×560.
 {
   const crop = await sharp('store/screenshots/demo-3.png')
-    .extract({ left: 322, top: 240, width: 448, height: 450 })
-    .resize(Math.round(448 * 1.06), Math.round(450 * 1.06))
+    .extract({ left: 322, top: 150, width: 448, height: 386 })
+    .resize(Math.round(448 * 1.12), Math.round(386 * 1.12))
     .png()
     .toBuffer();
   const { width: w, height: h } = await sharp(crop).metadata();
