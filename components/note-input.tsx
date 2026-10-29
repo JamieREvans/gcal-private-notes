@@ -16,7 +16,7 @@ interface Props {
   ariaLabel: string;
   disabled?: boolean;
   autoFocus?: boolean;
-  /** Pro: formatted editing (saved as Markdown). Falls back to plain text if the editor can't load. */
+  /** Pro: formatted editing, saved in the faithful text format. Falls back to plain text if the editor can't load. */
   rich?: boolean;
   /** Extra class for size variants (e.g. the pinned note). */
   class?: string;
@@ -25,7 +25,7 @@ interface Props {
   id?: string;
 }
 
-/** The note's text field: a plain textarea, or (Pro) a rich-text editor that stores Markdown. */
+/** The note's text field: a plain textarea, or (Pro) a rich-text editor that stores the same text format. */
 export function NoteInput(props: Props) {
   const [richFailed, setRichFailed] = useState(false);
   return props.rich && !richFailed ? (
@@ -135,7 +135,7 @@ function RichInput({ onFail, ...props }: Props & { onFail: () => void }) {
   const latest = useRef(props);
   latest.current = props;
   const [ready, setReady] = useState(false);
-  // Markdown this editor has produced since the last outside change. Renders can lag
+  // Text this editor has produced since the last outside change. Renders can lag
   // a few keystrokes behind the editor, so any of these coming back is just an echo.
   const emitted = useRef(new Set([props.value]));
   const [focused, setFocused] = useState(false);
@@ -148,7 +148,7 @@ function RichInput({ onFail, ...props }: Props & { onFail: () => void }) {
         if (cancelled || !hostRef.current) return;
         const p = latest.current;
         editorRef.current = createRichEditor(hostRef.current, {
-          markdown: p.value,
+          text: p.value,
           placeholder: p.placeholder,
           ariaLabel: p.ariaLabel,
           editable: !p.disabled,
@@ -188,7 +188,7 @@ function RichInput({ onFail, ...props }: Props & { onFail: () => void }) {
   useEffect(() => {
     const editor = editorRef.current;
     if (editor && !emitted.current.has(props.value)) {
-      editor.setMarkdown(props.value);
+      editor.setText(props.value);
       emitted.current = new Set([props.value]);
     }
   }, [props.value, ready]);

@@ -263,7 +263,7 @@ await step('Pro: rich text toolbar formats text and saves Markdown (under Calend
   await page.keyboard.type('Send budget to finance');
   await page.waitForTimeout(800);
   const saved = (await storage())['note:alex@example.com|planning42'];
-  assert.equal(saved.text, '# Budget\n\n**Decision:** hire two\n\n- first point\n\n- [ ] Send budget to finance');
+  assert.equal(saved.text, '# Budget\n**Decision:** hire two\n- first point\n- [ ] Send budget to finance');
   assert.deepEqual(await page.evaluate(() => window.__keys), [], 'page saw no keystrokes');
 });
 
@@ -286,6 +286,31 @@ await step('Pro: pasting rich HTML works under Trusted Types and keeps only safe
   assert.doesNotMatch(saved, /javascript:|onerror/);
   assert.equal(await page.evaluate(() => window.__pwned), undefined);
   await page.keyboard.press('Escape');
+});
+
+await step('Pro: an indented agenda with blank lines reopens exactly as typed', async () => {
+  await page.keyboard.press('Escape').catch(() => {});
+  await page.getByText('Dentist').click();
+  const content = notesBox.locator('.en-rich-content').first();
+  await content.waitFor({ timeout: 5000 });
+  await content.click();
+  const lines = ['**[15m]** Brokerage', '    **[10m]** Overview and News', '    **[5m]** Product', '', '', '**[15m]** Lending Services', '    **[10m]** Overview and News', '    **[5m]** Operations'];
+  for (const [n, line] of lines.entries()) {
+    if (n) await page.keyboard.press('Enter');
+    await page.keyboard.type(line);
+  }
+  await page.waitForTimeout(800);
+  const expected = lines.join('\n');
+  const stored = () => storage().then((all) => Object.values(all).find((v) => v?.eventId === 'dentist7')?.text);
+  assert.equal(await stored(), expected);
+  await page.keyboard.press('Escape');
+  await page.getByText('Dentist').click();
+  await notesBox.locator('.en-rich-content').first().waitFor();
+  await page.waitForTimeout(300);
+  const shown = await shadowEval((root) => [...root.querySelector('.en-rich-content').children].map((el) => el.textContent).join('\n'));
+  assert.equal(shown, expected.replace(/\*\*/g, ''), 'reopened note shows every line, indentation and blank line');
+  await page.keyboard.press('Escape');
+  assert.equal(await stored(), expected, 'reopening did not rewrite the note');
 });
 
 await step('Pro: Today lists the meeting with last time\'s note; Follow-ups ticks items off', async () => {

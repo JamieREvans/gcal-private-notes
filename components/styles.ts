@@ -226,12 +226,12 @@ export const STYLES = /* css */ `
 .ProseMirror-hideselection *::selection { background: transparent; }
 .ProseMirror-hideselection { caret-color: transparent; }
 img.ProseMirror-separator { display: inline !important; border: none !important; margin: 0 !important; }
-.en-rich-content p { margin: 0 0 4px; }
+.en-rich-content p { margin: 0; }
 .en-rich-content > :last-child { margin-bottom: 0; }
-.en-rich-content h1 { font-size: 16px; font-weight: 700; margin: 6px 0 4px; }
-.en-rich-content h2 { font-size: 14px; font-weight: 700; margin: 6px 0 4px; }
+.en-rich-content h1 { font-size: 16px; font-weight: 700; margin: 2px 0; }
+.en-rich-content h2 { font-size: 14px; font-weight: 700; margin: 2px 0; }
 .en-rich-content > :first-child { margin-top: 0; }
-.en-rich-content ul, .en-rich-content ol { margin: 2px 0 4px; padding-left: 20px; }
+.en-rich-content ul, .en-rich-content ol { margin: 0; padding-left: 20px; }
 .en-rich-content li p { margin: 0; }
 .en-rich-content ul[data-type='taskList'] { list-style: none; padding-left: 2px; }
 .en-rich-content li[data-checked] { display: flex; gap: 6px; align-items: flex-start; }
@@ -239,7 +239,7 @@ img.ProseMirror-separator { display: inline !important; border: none !important;
 .en-rich-content li[data-checked] > div { flex: 1; min-width: 0; }
 .en-rich-content li[data-checked='true'] > div { color: var(--en-muted); text-decoration: line-through; }
 .en-rich-content input[type='checkbox'] { accent-color: var(--en-accent); margin: 2px 0 0; cursor: pointer; }
-.en-rich-content blockquote { margin: 4px 0; padding-left: 8px; border-left: 3px solid var(--en-border); color: var(--en-muted); }
+.en-rich-content blockquote { margin: 0; padding-left: 8px; border-left: 3px solid var(--en-border); color: var(--en-muted); }
 .en-rich-content code { font-family: ui-monospace, Menlo, monospace; font-size: 12px; background: var(--en-bg); padding: 0 3px; border-radius: 3px; }
 .en-rich-content a { color: var(--en-accent); text-decoration: underline; cursor: pointer; }
 .en-rich-content p.is-editor-empty:first-child::before {

@@ -6,12 +6,31 @@ function occurrenceLabel(note: Note): string {
   return note.when ?? new Date(note.createdAt).toISOString().slice(0, 10);
 }
 
+/**
+ * Note text is already Markdown-flavoured, but Markdown renders indented lines
+ * as code and collapses runs of blank lines. Keep the note looking as written
+ * in Markdown apps: indentation becomes non-breaking spaces and every blank
+ * line is kept.
+ */
+export function noteTextToMarkdown(text: string): string {
+  return text
+    .split('\n')
+    .map((line) => {
+      if (!line.trim()) return '&nbsp;';
+      // Nested list items keep their indent; other indented lines would become code blocks.
+      if (/^ +(- |\d+\. )/.test(line)) return line;
+      return line.replace(/^[ \t]+/, (ws) => ws.replace(/\t/g, '    ').replace(/ /g, '\u00a0'));
+    })
+    .join('  \n')
+    .replace(/(?:&nbsp;  \n)+$/, '');
+}
+
 export function noteToMarkdown(note: Note): string {
   const title = note.title || 'Untitled event';
   const lines = [`## ${title} — ${occurrenceLabel(note)}`];
   if (note.when) lines.push(`*${note.when}*`);
   if (note.url) lines.push(`[Open in Google Calendar](${note.url})`);
-  lines.push('', note.text.trim(), '');
+  lines.push('', noteTextToMarkdown(note.text), '');
   return lines.join('\n');
 }
 

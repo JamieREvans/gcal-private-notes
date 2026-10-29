@@ -1,7 +1,8 @@
 /**
- * The Pro rich-text editor: TipTap (ProseMirror) that reads and writes
- * Markdown, so notes stay plain-text Markdown in storage and every other
- * feature (follow-ups, search, export, sync) keeps working on the text.
+ * The Pro rich-text editor: TipTap (ProseMirror) reading and writing the
+ * faithful line-based text format in ./text-format, so notes stay plain text
+ * in storage (follow-ups, search, export and sync keep working) and always
+ * reopen exactly as written.
  *
  * Built separately as an ES module (dist/.../rich/editor.js) and loaded on
  * demand, so free users and pages without a notes box never load it.
@@ -11,7 +12,6 @@ import Blockquote from '@tiptap/extension-blockquote';
 import Bold from '@tiptap/extension-bold';
 import Code from '@tiptap/extension-code';
 import Document from '@tiptap/extension-document';
-import HardBreak from '@tiptap/extension-hard-break';
 import Heading from '@tiptap/extension-heading';
 import Italic from '@tiptap/extension-italic';
 import Link from '@tiptap/extension-link';
@@ -20,16 +20,17 @@ import Paragraph from '@tiptap/extension-paragraph';
 import Strike from '@tiptap/extension-strike';
 import Text from '@tiptap/extension-text';
 import { Placeholder, UndoRedo } from '@tiptap/extensions';
-import { Markdown } from '@tiptap/markdown';
+import { docToText, textToDoc, type Doc } from './text-format';
 
 export type RichCommand = 'h1' | 'h2' | 'bold' | 'italic' | 'strike' | 'bullet' | 'ordered' | 'task' | 'link';
 
 export interface RichEditorOptions {
-  markdown: string;
+  /** The note's stored text. */
+  text: string;
   placeholder?: string;
   ariaLabel?: string;
   editable?: boolean;
-  onChange?: (markdown: string) => void;
+  onChange?: (text: string) => void;
   onFocus?: () => void;
   onBlur?: () => void;
   /** Selection or formatting changed (to refresh toolbar state). */
@@ -37,9 +38,9 @@ export interface RichEditorOptions {
 }
 
 export interface RichEditor {
-  getMarkdown(): string;
+  getText(): string;
   /** Replaces the content without firing onChange. */
-  setMarkdown(markdown: string): void;
+  setText(text: string): void;
   setEditable(editable: boolean): void;
   focus(): void;
   run(command: RichCommand): void;
@@ -54,7 +55,6 @@ export function extensions(placeholder = ''): Extensions {
     Document,
     Paragraph,
     Text,
-    HardBreak,
     Bold,
     Italic,
     Strike,
@@ -77,8 +77,6 @@ export function extensions(placeholder = ''): Extensions {
     }),
     UndoRedo,
     Placeholder.configure({ placeholder }),
-    // breaks: a single newline is a line break, matching how plain-text notes were written.
-    Markdown.configure({ markedOptions: { gfm: true, breaks: true } }),
   ];
 }
 
@@ -95,39 +93,11 @@ export function sanitizePastedHTML(html: string): string {
     .replace(/\s+(?:href|src|xlink:href|action|formaction)\s*=\s*(?:"\s*(?:javascript|data|vbscript):[^"]*"|'\s*(?:javascript|data|vbscript):[^']*'|(?:javascript|data|vbscript):[^\s>]*)/gi, '');
 }
 
-const unescapeMd = (s: string) => s.replace(/\\([\\`*_{}[\]()#+\-.!>~|])/g, '$1');
-
-/**
- * Markdown out of TipTap, normalised to read like the plain text people typed:
- * - hard breaks become a bare newline (not "\" or two trailing spaces);
- * - HTML entities the serializer adds (&lt; &gt; &amp;) go back to characters,
- *   except where that would form a tag, entity or quote;
- * - autolinked URLs and emails go back to bare text (they re-link on load);
- * - no trailing whitespace or runs of blank lines.
- */
-export function normalizeMarkdown(markdown: string): string {
-  return markdown
-    .replace(/\[([^\]\n]+)\]\(((?:https?:\/\/|mailto:)[^)\s]+)\)/g, (all, text: string, href: string) => {
-      const plain = unescapeMd(text);
-      return plain === href || `mailto:${plain}` === href ? href.replace(/^mailto:/, '') : all;
-    })
-    .replace(/&amp;(?!#?\w+;)/g, '&')
-    .replace(/&lt;(?![A-Za-z/!?])/g, '<')
-    .replace(/^(\s*)&gt;/gm, '$1\u0000')
-    .replace(/&gt;/g, '>')
-    .replace(/\u0000/g, '&gt;')
-    .replace(/(?: {2,}|\\)\n/g, '\n')
-    .replace(/[ \t]+$/gm, '')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
-}
-
 export function createRichEditor(element: HTMLElement, options: RichEditorOptions): RichEditor {
   const editor = new Editor({
     element,
     extensions: extensions(options.placeholder),
-    content: options.markdown,
-    contentType: 'markdown',
+    content: textToDoc(options.text),
     editable: options.editable ?? true,
     // Styles live in our shadow root (components/styles.ts), not the page's <head>.
     injectCSS: false,
@@ -140,7 +110,7 @@ export function createRichEditor(element: HTMLElement, options: RichEditorOption
         ...(options.ariaLabel ? { 'aria-label': options.ariaLabel } : {}),
       },
     },
-    onUpdate: ({ editor: e }) => options.onChange?.(normalizeMarkdown(e.getMarkdown())),
+    onUpdate: ({ editor: e }) => options.onChange?.(docToText(e.getJSON() as Doc)),
     onFocus: () => options.onFocus?.(),
     onBlur: () => options.onBlur?.(),
     onTransaction: () => options.onState?.(),
@@ -186,8 +156,8 @@ export function createRichEditor(element: HTMLElement, options: RichEditorOption
   };
 
   return {
-    getMarkdown: () => normalizeMarkdown(editor.getMarkdown()),
-    setMarkdown: (markdown) => editor.commands.setContent(markdown, { contentType: 'markdown', emitUpdate: false }),
+    getText: () => docToText(editor.getJSON() as Doc),
+    setText: (text) => editor.commands.setContent(textToDoc(text), { emitUpdate: false }),
     setEditable: (editable) => editor.setEditable(editable, false),
     focus: () => editor.commands.focus('end'),
     run: (command) => commands[command](),

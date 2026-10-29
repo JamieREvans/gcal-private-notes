@@ -42,3 +42,13 @@ describe('markdown export', () => {
     expect(md).toContain('[Open in Google Calendar](https://calendar.google.com/x)');
   });
 });
+
+describe('markdown export keeps notes looking as written', async () => {
+  const { noteTextToMarkdown } = await import('../lib/markdown');
+  it('keeps indentation, blank lines and nested lists', () => {
+    const md = noteTextToMarkdown('**[15m]** Brokerage\n    **[10m]** Overview\n\n\nNext\n- a\n  - nested');
+    expect(md).toBe(
+      '**[15m]** Brokerage  \n    **[10m]** Overview  \n&nbsp;  \n&nbsp;  \nNext  \n- a  \n  - nested',
+    );
+  });
+});

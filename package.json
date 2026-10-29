@@ -1,7 +1,7 @@
 {
   "name": "gcal-notes",
   "description": "Private notes on your Google Calendar events. Never added to the event or shared with guests.",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
   "license": "AGPL-3.0-or-later",
   "repository": "github:JamieREvans/gcal-private-notes",
@@ -25,7 +25,6 @@
     "@tiptap/extension-bold": "^3.32.0",
     "@tiptap/extension-code": "^3.32.0",
     "@tiptap/extension-document": "^3.32.0",
-    "@tiptap/extension-hard-break": "^3.32.0",
     "@tiptap/extension-heading": "^3.32.0",
     "@tiptap/extension-italic": "^3.32.0",
     "@tiptap/extension-link": "^3.32.0",
@@ -34,7 +33,6 @@
     "@tiptap/extension-strike": "^3.32.0",
     "@tiptap/extension-text": "^3.32.0",
     "@tiptap/extensions": "^3.32.0",
-    "@tiptap/markdown": "^3.32.0",
     "@tiptap/pm": "^3.32.0",
     "extpay": "^3.1.2",
     "preact": "^11.0.1"
