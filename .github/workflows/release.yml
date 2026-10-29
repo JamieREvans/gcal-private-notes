@@ -3,6 +3,8 @@
 # Release:  npm version <patch|minor|major>  &&  git push --follow-tags
 #           (the pushed vX.Y.Z tag must match package.json's version)
 # Check credentials without uploading: Actions → Release → Run workflow (dry run on).
+# Replace a version that's still in review: Run workflow from the new tag with
+#   dry run off and "cancel pending review" on.
 #
 # Repository secrets (Settings → Secrets and variables → Actions):
 #   CHROME_EXTENSION_ID            the item ID from the store dashboard / listing URL
@@ -19,6 +21,10 @@ on:
         description: 'Dry run: check credentials and build, but do not upload or submit'
         type: boolean
         default: true
+      cancel_pending:
+        description: 'Cancel a version that is still in review and submit this one instead'
+        type: boolean
+        default: false
 
 permissions:
   contents: write # to attach the zip to a GitHub release
@@ -69,8 +75,8 @@ jobs:
           CHROME_API_VERSION: v2
           # Publish automatically once Google approves the review.
           CHROME_PUBLISH_TYPE: DEFAULT_PUBLISH
-          # Fail (rather than cancel it) if a review is already in progress.
-          CHROME_CANCEL_PENDING: 'false'
+          # Tag pushes fail rather than cancel a review in progress; a manual run can opt in.
+          CHROME_CANCEL_PENDING: ${{ github.event_name == 'workflow_dispatch' && inputs.cancel_pending }}
           DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
         run: |
           missing=""
@@ -90,7 +96,7 @@ jobs:
           fi
 
       - name: Attach the zip to a GitHub release
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && !inputs.dry_run && startsWith(github.ref, 'refs/tags/'))
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release create "$GITHUB_REF_NAME" dist/*-chrome.zip --title "$GITHUB_REF_NAME" --generate-notes
